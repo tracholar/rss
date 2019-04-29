@@ -16,7 +16,7 @@ NEWSPIDER_MODULE = 'rss.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-#USER_AGENT = 'rss (+http://www.yourdomain.com)'
+USER_AGENT = "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36"
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = False
@@ -64,9 +64,9 @@ ROBOTSTXT_OBEY = False
 
 # Configure item pipelines
 # See https://doc.scrapy.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'rss.pipelines.RssPipeline': 300,
-#}
+ITEM_PIPELINES = {
+    'rss.pipelines.RssPipeline': 300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See https://doc.scrapy.org/en/latest/topics/autothrottle.html

@@ -1,0 +1,29 @@
+<!doctype html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <title>推荐首页</title>
+    <style style="text/css">
+        .datetime{
+            color: #AAA;
+        }
+    </style>
+</head>
+<body>
+    <ul>
+    {% for article in articles %}
+        <li>
+            <div>
+                <h2>
+                    <span class="datetime">{{ article.date }}</span>
+                    <a href="{{ article.link }}" target="_blank">
+                        {{ article.title }}
+                    </a>
+                </h2>
+                <p>{{ article.desc }}</p>
+            </div>
+        </li>
+    {% endfor %}
+    </ul>
+</body>

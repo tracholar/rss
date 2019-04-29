@@ -1,0 +1,4 @@
+*.py[cxd]
+.DS_Store
+.idea
+robot/rss/zhihu/*.*
