@@ -19,7 +19,7 @@ def extract_link_density(e):
 def extract_p_number(e):
     return len([b for b in e.iter() if b.tag in ('p', 'P')])
 def extract_np_number(e):
-    return len([b for b in e.iter() if b.tag not in ('p', 'P')])
+    return len([b for b in e.iter() if b.tag not in ('p', 'P', 'h1', 'h2', 'h3', 'h4', 'h5', 'blockquote', 'span', 'div', 'table', 'tr', 'td', 'th', 'img')])
 
 def extract_text_number(e):
     return len(element_to_text(e))
@@ -44,10 +44,9 @@ def extract_main_content(html):
     for v1, v2, v3, v4 in zip(link_density, p_number, text_number, np_number):
         s = 0
         if v1 > 0.1:
-            s += -100000
-        if p_number == 0:
-            s += -10
-        s += -10.0 * v1 + v2 + v3/200.0 - v4
+            s += -100
+
+        s += -20.0 * v1 + v2 + v3/100.0 - v4
         score.append(s)
     return element_to_html(blocks[np.argmax(score)])
 

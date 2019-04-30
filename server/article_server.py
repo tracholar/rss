@@ -2,13 +2,13 @@
 from flask import Flask
 from flask import render_template
 from flask import request, make_response, url_for, redirect, Markup
-from html_analysis import extract_main_content
 import mysql.connector
 import json
 import time
 from urllib import quote
 
 app = Flask(__name__)
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 db = mysql.connector.connect(
     host="localhost",
@@ -27,10 +27,17 @@ from lxml import etree
 from StringIO import StringIO
 import re
 
+def safe_int(x):
+    if type(x) is str:
+        if x == '':
+            return 0
+        return int(x)
+    return int(x)
+
 @app.route("/")
 def index():
     c = db.cursor(dictionary=True)
-    offset = int(request.args.get('offset', 0))
+    offset = safe_int(request.args.get('offset', 0))
     c.execute("select * from article order by `date` desc limit " + str(offset) + ",10")
     articles = c.fetchall()
     for article in articles:
@@ -43,6 +50,18 @@ def index():
     }
     return render_template('index.html', **args)
 
+@app.route("/article/<int:article_id>")
+def article(article_id):
+    c = db.cursor(dictionary=True)
+    c.execute("select * from article where id=" + str(article_id))
+    articles = c.fetchall()
+    for article in articles:
+        article['body'] = Markup(article['body'])
+
+    args = {
+        "articles" : articles
+    }
+    return render_template('index.html', **args)
 
 @app.route("/event/<string:evt_name>/<int:article_id>")
 def event(evt_name, article_id):
