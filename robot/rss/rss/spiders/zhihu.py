@@ -1,7 +1,7 @@
 #coding:utf-8
 import scrapy
 from scrapy.linkextractors import LinkExtractor
-from scrapy.spiders import Rule
+from scrapy.spiders import  CrawlSpider
 from rss.items import RssItem
 from urlparse import urljoin
 
@@ -9,19 +9,17 @@ class ZhiHuSpider(scrapy.Spider):
     name = 'zhihu'
 
     # 必须是列表
-    rules = [
-        Rule(LinkExtractor(allow_domains=("arxiv.org"), allow=(r'/abs/'), )),
-        Rule(LinkExtractor(allow_domains=("zhihu.com"), allow=(r'/question/'), )),
-        Rule(LinkExtractor(allow_domains=("news.ustc.edu.cn", "bbs.ustc.edu.cn"), )),
-        Rule(LinkExtractor(allow_domains=("www.jiqizhixin.com"), allow=(r"/articles/"), )),
-        Rule(LinkExtractor(allow_domains=("deepmind.com"), allow=(r"/blog/"), )),
-        Rule(LinkExtractor(allow_domains=("new.qq.com"), allow=(r"/omn/"), )),
-        Rule(LinkExtractor(allow_domains=("leiphone.com", "ai.yanxishe.com"), allow=(r"/news/", r"/page/"), )),
-        Rule(LinkExtractor(allow_domains=("wallstreetcn.com"), allow=(r"/articles/"), )),
-        Rule(LinkExtractor(allow_domains=("tech.meituan.com"), allow=(r"/\d{4}/"), )),
-        Rule(LinkExtractor(allow_domains=("technologyreview.com"), allow=(r"/s/"), )),
+    rules = { "arxiv.org" : r'/abs/' }
 
-    ]
+    allowed_domains = ["zhihu.com",
+                       "news.ustc.edu.cn", "bbs.ustc.edu.cn",
+                       "www.jiqizhixin.com",
+                       "deepmind.com", "new.qq.com",
+                       "leiphone.com", "ai.yanxishe.com",
+                       "wallstreetcn.com",
+                       "tech.meituan.com",
+                       "technologyreview.com"]
+
     start_urls = [
         "https://www.zhihu.com/explore/recommendations",
         "http://news.ustc.edu.cn/",
@@ -48,10 +46,11 @@ class ZhiHuSpider(scrapy.Spider):
     ]
 
     def parse(self, resp):
-        for sel in resp.xpath('//a'):
-            urls = sel.xpath('@href').extract()
+
+        for r in self.rules:
+            urls = r.link_extractor.extract_links(resp)
             for url in urls:
-                yield scrapy.Request(urljoin(resp.url, url), self.parse_body)
+                yield scrapy.Request(url.url, self.parse_body)
 
     def take_one(self, list_like):
         if type(list_like) is list:
