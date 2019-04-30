@@ -1,3 +1,4 @@
+#coding:utf-8
 import scrapy
 from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import Rule
@@ -9,21 +10,18 @@ class ZhiHuSpider(scrapy.Spider):
 
     # 必须是列表
     rules = [
-        # follow=False(不跟进), 只提取首页符合规则的url，然后爬取这些url页面数据，callback解析
-        # Follow=True(跟进链接), 在次级url页面中继续寻找符合规则的url,如此循环，直到把全站爬取完毕
+        Rule(LinkExtractor(allow_domains=("arxiv.org"), allow=(r'/abs/'), )),
+        Rule(LinkExtractor(allow_domains=("zhihu.com"), allow=(r'/question/'), )),
+        Rule(LinkExtractor(allow_domains=("news.ustc.edu.cn", "bbs.ustc.edu.cn"), )),
+        Rule(LinkExtractor(allow_domains=("www.jiqizhixin.com"), allow=(r"/articles/"), )),
+        Rule(LinkExtractor(allow_domains=("deepmind.com"), allow=(r"/blog/"), )),
+        Rule(LinkExtractor(allow_domains=("new.qq.com"), allow=(r"/omn/"), )),
+        Rule(LinkExtractor(allow_domains=("leiphone.com", "ai.yanxishe.com"), allow=(r"/news/", r"/page/"), )),
+        Rule(LinkExtractor(allow_domains=("wallstreetcn.com"), allow=(r"/articles/"), )),
+        Rule(LinkExtractor(allow_domains=("tech.meituan.com"), allow=(r"/\d{4}/"), )),
+        Rule(LinkExtractor(allow_domains=("technologyreview.com"), allow=(r"/s/"), )),
 
-        Rule(LinkExtractor(allow_domains=("arxiv.org"), allow=(r'/list/', r'/abs/'), callback='parse_body', follow=False)),
-        Rule(LinkExtractor(allow_domains=("zhihu.com"), allow=(r'/list/', r'/abs/'), callback='parse_body', follow=False))
     ]
-
-    allowed_domains = ["zhihu.com",
-                       "news.ustc.edu.cn", "bbs.ustc.edu.cn",
-                       "www.jiqizhixin.com",
-                       "deepmind.com", "new.qq.com",
-                       "leiphone.com", "ai.yanxishe.com",
-                       "wallstreetcn.com",
-                       "tech.meituan.com",
-                       "technologyreview.com"]
     start_urls = [
         "https://www.zhihu.com/explore/recommendations",
         "http://news.ustc.edu.cn/",
