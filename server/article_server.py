@@ -17,6 +17,12 @@ db = mysql.connector.connect(
     database="rss"
 )
 
+@app.template_filter('url_domain')
+def url_domain(url):
+    from urlparse import urlparse
+    obj = urlparse(url)
+    return obj.netloc
+
 @app.route("/hello")
 def hello():
     return "Hello World!"
@@ -49,6 +55,7 @@ def index():
         "prev_offset" : max(0, offset - 10)
     }
     return render_template('index.html', **args)
+
 
 @app.route("/article/<int:article_id>")
 def article(article_id):
