@@ -3,6 +3,7 @@ from flask import Flask
 from flask import render_template
 from flask import request, make_response, url_for, redirect, Markup
 import mysql.connector
+import MySQLdb
 import json
 import time
 from urllib import quote
@@ -44,7 +45,16 @@ def safe_int(x):
 def index():
     c = db.cursor(dictionary=True)
     offset = safe_int(request.args.get('offset', 0))
-    c.execute("select * from article order by `date` desc limit " + str(offset) + ",10")
+    where = []
+    if 'site' in request.args:
+        site = MySQLdb.escape_string(request.args.get('site'))
+        where.append("link like '%{0}%'".format(site))
+    if len(where) > 0:
+        where = ' where ' + ' AND '.join(where)
+    else:
+        where = ''
+
+    c.execute("select * from article " + where + " order by `date` desc limit " + str(offset) + ",10")
     articles = c.fetchall()
     for article in articles:
         article['body'] = Markup(article['body'])
@@ -111,11 +121,14 @@ def src():
         'user-agent' : "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
         'Referer' : refer
     }
-    r = rq.get(url, headers=headers, stream = True)
-    resp = make_response(r.raw.data)
-    for h in r.headers:
-        resp.headers.set(h, r.headers[h])
-    return resp
+    try:
+        r = rq.get(url, headers=headers, stream = True)
+        resp = make_response(r.raw.data)
+        for h in r.headers:
+            resp.headers.set(h, r.headers[h])
+        return resp
+    except Exception:
+        return make_response('')
 
 if __name__ == '__main__':
     app.run()

@@ -15,7 +15,8 @@ class ZhiHuSpider(scrapy.Spider):
         "arxiv.org" : [r'/abs/'],
         "www.solidot.org" : [r'/story'],
         "www.leiphone.com" : [r'/list'],
-        "www.nature.com" : [r'/articles/']
+        "www.nature.com" : [r'/articles/'],
+        "vip.stock.finance.sina.com.cn": [r'/q/go.php/vReport_Show/']
     }
 
     allowed_domains = ["zhihu.com",
@@ -27,7 +28,8 @@ class ZhiHuSpider(scrapy.Spider):
                        "tech.meituan.com",
                        "technologyreview.com",
                        "arxiv.org",
-                       "www.nature.com"]
+                       "www.nature.com",
+                       "vip.stock.finance.sina.com.cn"]
 
     start_urls = [
         "https://www.zhihu.com/explore/recommendations",
@@ -53,7 +55,8 @@ class ZhiHuSpider(scrapy.Spider):
         "https://www.technologyreview.com/",
         "https://arxiv.org/list/cs.AI/recent", "https://arxiv.org/list/cs.CV/recent", "https://arxiv.org/list/cs.LG/recent",
         "https://www.solidot.org/",
-        "https://www.nature.com/news"
+        "https://www.nature.com/news",
+        "http://vip.stock.finance.sina.com.cn/q/go.php/vReport_List/kind/industry/index.phtml"
     ]
 
     def match_url(self, url):
