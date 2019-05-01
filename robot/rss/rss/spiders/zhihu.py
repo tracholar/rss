@@ -12,9 +12,10 @@ class ZhiHuSpider(scrapy.Spider):
 
     # 必须是列表
     rules = {
-            "arxiv.org" : [r'/abs/'],
-            "www.solidot.org" : [r'/story'],
-            "www.leiphone.com" : [r'/list']
+        "arxiv.org" : [r'/abs/'],
+        "www.solidot.org" : [r'/story'],
+        "www.leiphone.com" : [r'/list'],
+        "www.nature.com" : [r'/articles/']
     }
 
     allowed_domains = ["zhihu.com",
@@ -25,7 +26,8 @@ class ZhiHuSpider(scrapy.Spider):
                        "wallstreetcn.com",
                        "tech.meituan.com",
                        "technologyreview.com",
-                       "arxiv.org"]
+                       "arxiv.org",
+                       "www.nature.com"]
 
     start_urls = [
         "https://www.zhihu.com/explore/recommendations",
@@ -51,6 +53,7 @@ class ZhiHuSpider(scrapy.Spider):
         "https://www.technologyreview.com/",
         "https://arxiv.org/list/cs.AI/recent", "https://arxiv.org/list/cs.CV/recent", "https://arxiv.org/list/cs.LG/recent",
         "https://www.solidot.org/",
+        "https://www.nature.com/news"
     ]
 
     def match_url(self, url):

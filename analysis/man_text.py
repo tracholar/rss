@@ -13,6 +13,9 @@ db = mysql.connector.connect(
     database="rss"
 )
 
+def date_fmt(ds):
+    import time
+    return time.strftime('%Y-%m-%d %H:%M:%S', time.strptime(ds))
 
 c = db.cursor(dictionary=True)
 c.execute("select * from rss where id not in (select id from article)")
@@ -25,7 +28,7 @@ for article in articles:
     if text is None or len(text) < 500:
         continue
     c.execute("INSERT INTO article (id, title, link, body, date) VALUES (%s, %s, %s, %s, %s)",
-              (article['id'], article['title'], article['link'], body, article['date']))
+              (article['id'], article['title'], article['link'], body, date_fmt(article['date'])))
     print '>>>>', article['title'] , '>>>>'
 
 db.commit()

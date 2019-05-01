@@ -90,5 +90,25 @@ def jump():
     url = request.args.get('url', "")
     return redirect(url)
 
+@app.route("/src")
+def src():
+    """获取站外资源"""
+    import requests as rq
+    from urlparse import urljoin
+
+    refer = request.args.get('refer', "")
+    url = request.args.get('url', "")
+    if not url.startswith('http'):
+        url = urljoin(refer, url)
+    headers = {
+        'user-agent' : "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
+        'Referer' : refer
+    }
+    r = rq.get(url, headers=headers, stream = True)
+    resp = make_response(r.raw.data)
+    for h in r.headers:
+        resp.headers.set(h, r.headers[h])
+    return resp
+
 if __name__ == '__main__':
     app.run()

@@ -14,17 +14,16 @@
         }
         .item{
             padding: 2em;
-            margin: 2em 0;
             border-bottom: 1px solid #AAA;
         }
         .item:hover{
-            background: #EEE;
+            background: rgba(250, 250, 250, 0.5);
         }
         .article-body img, .article-body svg{
             max-width:600px !important;
         }
         .article-body.brief{
-            height: 300px;
+            max-height: 300px;
             overflow-y: hidden;
         }
         .article-footer{
@@ -80,7 +79,7 @@
                     </div>
                     <div class="article-body brief">{{ article.body }}</div>
                     <div class="article-footer">
-                        <a href="#" class="more">more</a>
+                        <a href="#" class="more btn btn-info btn-sm">more</a>
                     </div>
                 </div>
                 {% endfor %}
@@ -99,6 +98,21 @@
     <script src="/static/bootstrap.min.js"></script>
 
     <script type="text/javascript">
+        $('img').each(function(){
+            var refer = $(this).parents('.item').find('.article-header h2 a');
+            if(refer.length == 0) return;
+            refer = refer[0];
+            if(refer.href == undefined || refer.href.length == 0) return;
+            refer = refer.href;
+
+            var src = this.src;
+            if(src == undefined || src.length == 0){
+                src = $(this).data('src');
+            }
+            if(refer != undefined && src != undefined){
+                this.src = '/src?refer=' + encodeURIComponent(refer) + '&url=' + encodeURIComponent(src);
+            }
+        })
         $(function(){
             /*
             $('.item').each(function(){
