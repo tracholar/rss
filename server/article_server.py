@@ -45,6 +45,9 @@ def safe_int(x):
 
 @app.route("/")
 def index():
+    db.close()
+    db.reconnect()
+
     c = db.cursor(dictionary=True)
     offset = safe_int(request.args.get('offset', 0))
     where = []

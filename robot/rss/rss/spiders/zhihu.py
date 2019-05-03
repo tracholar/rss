@@ -16,7 +16,12 @@ class ZhiHuSpider(scrapy.Spider):
         "www.solidot.org" : [r'/story'],
         "www.leiphone.com" : [r'/list'],
         "www.nature.com" : [r'/articles/'],
-        "vip.stock.finance.sina.com.cn": [r'/q/go.php/vReport_Show/']
+        "vip.stock.finance.sina.com.cn": [r'/q/go.php/vReport_Show/'],
+        "www.infoq.cn" : [r'/article/'],
+        "36kr.com" : [r'/p/'],
+        "cnbeta.com" : [r'/articles/'],
+        "www.e0734.com" : [r'/html/2'],
+        "rednet.cn" : [r'/content/2']
     }
 
     allowed_domains = ["zhihu.com",
@@ -29,7 +34,12 @@ class ZhiHuSpider(scrapy.Spider):
                        "technologyreview.com",
                        "arxiv.org",
                        "www.nature.com",
-                       "vip.stock.finance.sina.com.cn"]
+                       "www.solidot.org",
+                       "vip.stock.finance.sina.com.cn",
+                       "www.infoq.cn",
+                       "36kr.com",
+                       "cnbeta.com",
+                       "www.e0734.com", "rednet.cn"]
 
     start_urls = [
         "https://www.zhihu.com/explore/recommendations",
@@ -56,7 +66,12 @@ class ZhiHuSpider(scrapy.Spider):
         "https://arxiv.org/list/cs.AI/recent", "https://arxiv.org/list/cs.CV/recent", "https://arxiv.org/list/cs.LG/recent",
         "https://www.solidot.org/",
         "https://www.nature.com/news",
-        "http://vip.stock.finance.sina.com.cn/q/go.php/vReport_List/kind/industry/index.phtml"
+        "http://vip.stock.finance.sina.com.cn/q/go.php/vReport_List/kind/industry/index.phtml",
+        "https://www.infoq.cn/",
+        "https://36kr.com/",
+        "https://www.cnbeta.com/",
+        "http://www.e0734.com/",
+        "http://www.rednet.cn/index.html"
     ]
 
     def match_url(self, url):
