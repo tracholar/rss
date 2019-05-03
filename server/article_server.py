@@ -1,4 +1,6 @@
 #coding:utf-8
+import sys
+sys.path.append('../analysis')
 from flask import Flask
 from flask import render_template
 from flask import request, make_response, url_for, redirect, Markup
@@ -59,10 +61,14 @@ def index():
     for article in articles:
         article['body'] = Markup(article['body'])
 
+    url_args = {}
+    for k in request.args:
+        if k != 'offset':
+            url_args[k] = request.args[k]
     args = {
         "articles" : articles,
-        "next_offset" : offset+10,
-        "prev_offset" : max(0, offset - 10)
+        "next_link" : url_for('index', offset=offset+10, **url_args),
+        "prev_link" : url_for('index', offset=max(0, offset - 10), **url_args)
     }
     return render_template('index.html', **args)
 
@@ -130,5 +136,38 @@ def src():
     except Exception:
         return make_response('')
 
+@app.route('/main_content_sample', methods=['POST'])
+def main_content_sample():
+    html = request.form.get('html')
+    y = int(request.form.get('y'))
+    if y > 0:
+        y = 1
+    else:
+        y = -1
+
+    from html_analysis import add_sample
+    add_sample(html, y)
+    return make_response('')
+
+
+
+@app.route('/tag_main_content')
+def tag_main_content():
+    if 'id' in request.args:
+        where = ' where id = ' + str(safe_int(request.args.get('id')))
+    else:
+        where = ' order by rand() '
+    c = db.cursor(dictionary=True)
+    c.execute("select * from rss " + where + " limit 1")
+    article = c.fetchone()
+    from html_analysis import predict, element_to_html
+    parser = etree.HTMLParser()
+    T = etree.parse(StringIO(article['body']), parser)
+    score = [(n,predict(n)) for n in T.iter() if type(n.tag) is str and n.tag.lower() in ('div', 'section', 'article')]
+    score.sort(key=lambda x: x[1], reverse=True)
+    articles = [{'body' : Markup(element_to_html(n), encoding='utf-8'), 'title': article['title'], 'link' : article['link'], 'date' : article['date'], 'extra' : 'score:' + str(v)} for n,v in score]
+    #print articles
+    return render_template('index.html', articles=articles)
+
 if __name__ == '__main__':
-    app.run()
+    app.run(threaded=True)
