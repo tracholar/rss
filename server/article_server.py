@@ -72,7 +72,7 @@ def index():
     if rec:
         orderby = ' order by IF(rand()<0.2, rand()*3-1.5, IFNULL(score, 0)) desc '
     elif 'orderby' not in request.args:
-        orderby = ' order by left(`date`, 10) desc, CAST(IFNULL(score, 0)*3 AS SIGNED) desc, MD5(id) '
+        orderby = ' order by left(`date`, 10) desc, CAST(IF(rand()<0.2, rand()*4-2, IFNULL(score, 0))*3 AS SIGNED) desc, MD5(id) '
     elif 'orderby' in request.args:
         orderby = ' order by ' + request.args['orderby'] + ' '
 
