@@ -74,7 +74,7 @@ class ZhiHuSpider(scrapy.Spider):
         "https://www.cnbeta.com/",
         "http://www.e0734.com/",
         "https://hn.rednet.cn/",
-        "https://cn.investing.com/news/"
+        "https://cn.investing.com/news/", "https://cn.investing.com/news/latest-news",
     ]
 
     def match_url(self, url):
