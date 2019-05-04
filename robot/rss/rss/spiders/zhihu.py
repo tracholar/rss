@@ -14,7 +14,7 @@ class ZhiHuSpider(scrapy.Spider):
     rules = {
         "arxiv.org" : [r'/abs/'],
         "www.solidot.org" : [r'/story'],
-        "www.leiphone.com" : [r'/list'],
+        "www.leiphone.com" : [r'/news', r'/latest'],
         "www.nature.com" : [r'/articles/'],
         "vip.stock.finance.sina.com.cn": [r'/q/go.php/vReport_Show/'],
         "www.infoq.cn" : [r'/article/'],
