@@ -21,7 +21,8 @@ class ZhiHuSpider(scrapy.Spider):
         "36kr.com" : [r'/p/'],
         "cnbeta.com" : [r'/articles/'],
         "www.e0734.com" : [r'/html/2'],
-        "hn.rednet.cn" : [r'/content/2']
+        "hn.rednet.cn" : [r'/content/2'],
+        "cn.investing.com" : [r'/news/']
     }
 
     allowed_domains = ["zhihu.com",
@@ -39,7 +40,8 @@ class ZhiHuSpider(scrapy.Spider):
                        "www.infoq.cn",
                        "36kr.com",
                        "cnbeta.com",
-                       "www.e0734.com", "hn.rednet.cn"]
+                       "www.e0734.com", "hn.rednet.cn",
+                       "cn.investing.com"]
 
     start_urls = [
         "https://www.zhihu.com/explore/recommendations",
@@ -71,7 +73,8 @@ class ZhiHuSpider(scrapy.Spider):
         "https://36kr.com/",
         "https://www.cnbeta.com/",
         "http://www.e0734.com/",
-        "https://hn.rednet.cn/"
+        "https://hn.rednet.cn/",
+        "https://cn.investing.com/news/"
     ]
 
     def match_url(self, url):
