@@ -15,4 +15,5 @@ python man_text.py
 # gen rec
 cd $root
 cd recommend
+python train.py
 python rec.py
