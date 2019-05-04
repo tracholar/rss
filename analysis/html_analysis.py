@@ -154,7 +154,7 @@ def extract_main_content(html):
         return ''
 
     score = [predict(b) for b in blocks]
-    if np.max(score) < 0.1:
+    if np.max(score) < -0.1:
         return ''
     return element_to_html(blocks[np.argmax(score)])
 

@@ -15,6 +15,7 @@
         .item{
             padding: 2em;
             border-bottom: 1px solid #AAA;
+            clear: both;
         }
         .item:hover{
             background: rgba(250, 250, 250, 0.5);
@@ -29,6 +30,10 @@
         }
         .article-footer{
             width: 100%;
+            clear: both;
+        }
+        #pagination{
+            clear: both;
         }
         .like-btn,.hate-btn{
             margin-left:1em;
@@ -43,8 +48,11 @@
                 <li class="nav-item active">
                     <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#">来源</a>
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button">来源</a>
+                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                        <a class="dropdown-item" href="/?rec=1&site=cnbeta.com">www.cnbeta.com</a>
+                    </div>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/?orderby=date%20desc">日期</a>
@@ -78,7 +86,7 @@
                             <span class="datetime">{{ article.date }}</span>
                             <span class="btn btn-info btn-sm is-main-content">是主要内容</span>
                             <span class="btn btn-warning btn-sm is-not-main-content">不是主要内容</span>
-                            <a class="url-domain btn btn-outline-info btn-sm" href="/?site={{ article.link | url_domain }}">{{ article.link | url_domain }}</a>
+                            <a class="url-domain btn btn-outline-info btn-sm" href="/?rec=1&site={{ article.link | url_domain }}">{{ article.link | url_domain }}</a>
 
                             <a href="#" class="more btn btn-info btn-sm">more</a>
                             {% if 'score' in article %}
