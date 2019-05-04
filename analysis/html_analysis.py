@@ -108,6 +108,7 @@ def train_model():
         from sklearn.svm import LinearSVC
         clf = LinearSVC(C=1.0)
         clf.fit(df, y)
+        print '#sample', len(y)
         print 'clf', clf.coef_
         print 'score', clf.score(df, y)
         import pickle

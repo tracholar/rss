@@ -10,6 +10,7 @@ sh run.sh
 # gen index
 cd $root
 cd analysis
+python train.py
 python man_text.py
 
 # gen rec
