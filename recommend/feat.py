@@ -1,6 +1,8 @@
 #coding:utf-8
 import sys
 sys.path.append('../analysis')
+sys.path.append('../conf')
+from conf import mysql_conf
 import mysql.connector
 from readability import Document
 from lxml import etree
@@ -22,19 +24,14 @@ def gen_feat(row):
     feat = {}
     feat['f_site'] = url_domain(row['link'])
     feat['f_title_keywords'] = ','.join(utf8_en(t).lower() for t in analyse.extract_tags(row['title']))
-    feat['f_content_keywords'] = ','.join(utf8_en(t).lower() for t in analyse.extract_tags(body))
+    feat['f_content_keywords'] = ','.join(utf8_en(t).lower() for t in analyse.extract_tags(body, topK=200))
     feat['f_date'] = row['date']
     feat['f_content_len'] = len(body)
     feat['f_img_n'] = sum(1 for n in html_to_element(row['body']).iter() if n.tag in ('img', 'IMG'))
     return feat
 
 def iter_data():
-    db = mysql.connector.connect(
-        host="localhost",
-        user="root",
-        passwd="123456",
-        database="rss"
-    )
+    db = mysql.connector.connect(**mysql_conf)
     c = db.cursor(dictionary=True)
     c.execute("delete from article_feat")
     db.commit()

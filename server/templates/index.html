@@ -47,7 +47,7 @@
                     <a class="nav-link" href="#">来源</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="#">日期</a>
+                    <a class="nav-link" href="/?orderby=date%20desc">日期</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" href="/?rec=1">推荐</a>
@@ -147,7 +147,7 @@
                 var n = $(this).parents('.item').find('.article-body').toggleClass('brief');
                 if($(n).is('.brief')){
                     var pos = $(this).parents('.item').offset();
-                    pos.behavior = 'smooth';
+                    // pos.behavior = 'smooth';
                     pos.top = pos.top - 65;
                     window.scrollTo(pos);
                 }

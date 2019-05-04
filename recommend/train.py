@@ -4,8 +4,8 @@ sys.path.append('../conf')
 from conf import mysql_conf
 import mysql.connector
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
-from sklearn.svm import SVC
+from sklearn.linear_model import LogisticRegression, ElasticNet, SGDClassifier
+from sklearn.svm import LinearSVC
 import pickle
 import hashlib
 import time
@@ -88,11 +88,11 @@ clf = pickle.load(open('like_model.bin', 'rb'))
 
 def predict(data):
     X, _ = feat_to_df(data)
-    return clf.predict_log_proba(X)
+    return clf.decision_function(X)
 
 def train():
     X, y = get_data()
-    clf = LogisticRegression(penalty='l1', C=1.0, verbose=True)
+    clf = LinearSVC(penalty='l1', dual=False, C=1, tol=1e-6, verbose=True)
     clf.fit(X, y)
     print '#sample:', len(y)
     print 'score:', clf.score(X, y)

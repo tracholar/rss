@@ -70,9 +70,11 @@ def index():
         where = ''
 
     if rec:
-        orderby = ' order by IFNULL(score, 0) + rand()*0.3 desc '
-    else:
+        orderby = ' order by IFNULL(score, 0) desc '
+    elif 'orderby' not in request.args:
         orderby = ' order by left(`date`, 10) desc, MD5(id) '
+    elif 'orderby' in request.args:
+        orderby = ' order by ' + request.args['orderby'] + ' '
 
     c.execute("select * from article " + where + orderby +" limit " + str(offset) + ",10")
     articles = c.fetchall()

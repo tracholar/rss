@@ -15,7 +15,7 @@ def calc_rec_score():
 
     for row in c.fetchall():
         data = [gen_feat(row)]
-        score = predict(data)[0, 0]
+        score = predict(data)[0]
         aid = row['id']
         c.execute("UPDATE article SET score = %s where id = %s", (float(score), aid))
         print '>>>', row['title'], ' score=', score
