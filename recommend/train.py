@@ -92,8 +92,9 @@ def predict(data):
 
 def train():
     X, y = get_data()
-    clf = LogisticRegression(penalty='l1', C=5.0, verbose=True)
+    clf = LogisticRegression(penalty='l1', C=1.0, verbose=True)
     clf.fit(X, y)
+    print '#sample:', len(y)
     print 'score:', clf.score(X, y)
     print 'w:', clf.coef_
     print 'nonzw:', [int(w*1e3)/1e3 for w in clf.coef_[0] if abs(w)>0]
@@ -102,5 +103,7 @@ def train():
     fp.close()
 
 if __name__ == '__main__':
+    from feat import iter_data
+    iter_data()
     train()
 

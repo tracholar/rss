@@ -40,7 +40,7 @@ def iter_data():
     db.commit()
 
     sql = """
-            SELECT  json_extract(evt_attr, '$.article_id') as id,
+            SELECT  b.id,
                     if(name='like', 1, -1) as y,
                     b.link,
                     b.title,
@@ -48,7 +48,7 @@ def iter_data():
                     b.date
             FROM article_event a
             JOIN article b
-            ON json_extract(a.evt_attr, '$.article_id')=b.id
+            ON cast(json_extract(a.evt_attr, '$.article_id') as SIGNED)=b.id
             WHERE a.name IN ('like', 'hate')
         """
     c.execute(sql)
