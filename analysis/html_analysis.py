@@ -6,10 +6,18 @@ import numpy as np
 import re
 import logging
 
+def html_to_element(html):
+    parser = etree.HTMLParser()
+    T = etree.parse(StringIO(html), parser)
+    return T
 def element_to_html(e):
+    if type(e) is str or type(e) is unicode:
+        e =  html_to_element(e)
     return etree.tostring(e, encoding='utf-8', method="html", pretty_print=True)
 
 def element_to_text(e):
+    if type(e) is str or type(e) is unicode:
+        e =  html_to_element(e)
     return etree.tostring(e, encoding='utf-8', method="text")
 
 def extract_link_density(e):

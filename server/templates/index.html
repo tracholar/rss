@@ -28,7 +28,7 @@
             overflow-y: hidden;
         }
         .article-footer{
-            text-align: right;
+            width: 100%;
         }
         .like-btn,.hate-btn{
             margin-left:1em;
@@ -89,7 +89,7 @@
                     </div>
                     <div class="article-body brief">{{ article.body }}</div>
                     <div class="article-footer">
-                        <a href="#" class="more btn btn-info btn-sm">more</a>
+                        <a href="#" class="more btn btn-link btn-block">more</a>
                     </div>
                 </div>
                 {% endfor %}
@@ -142,7 +142,13 @@
                 return false;
             })
             $('.more').click(function(){
-                $(this).parents('.item').find('.article-body').toggleClass('brief');
+                var n = $(this).parents('.item').find('.article-body').toggleClass('brief');
+                if($(n).is('.brief')){
+                    var pos = $(this).parents('.item').offset();
+                    pos.behavior = 'smooth';
+                    pos.top = pos.top - 65;
+                    window.scrollTo(pos);
+                }
                 return false;
             })
             $('.is-main-content').click(function(){
