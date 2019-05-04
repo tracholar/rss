@@ -26,6 +26,12 @@ def url_domain(url):
     obj = urlparse(url)
     return obj.netloc
 
+@app.template_filter('float3')
+def float3(x):
+    if x is None:
+        x = -1.0
+    return '{:.3f}'.format(float(x))
+
 @app.route("/hello")
 def hello():
     return "Hello World!"
@@ -42,6 +48,9 @@ def safe_int(x):
             return 0
         return int(x)
     return int(x)
+def trace_id():
+    from hashlib import md5
+    return md5(str(time.time())).hexdigest()[:10] + str(int(time.time()))
 
 @app.route("/")
 def index():
@@ -50,6 +59,7 @@ def index():
 
     c = db.cursor(dictionary=True)
     offset = safe_int(request.args.get('offset', 0))
+    rec = safe_int(request.args.get('rec', 0))  # 推荐
     where = []
     if 'site' in request.args:
         site = MySQLdb.escape_string(request.args.get('site'))
@@ -59,7 +69,12 @@ def index():
     else:
         where = ''
 
-    c.execute("select * from article " + where + " order by `date` desc limit " + str(offset) + ",10")
+    if rec:
+        orderby = ' order by IFNULL(score, 0) + rand()*0.1 desc '
+    else:
+        orderby = ' order by `date` desc '
+
+    c.execute("select * from article " + where + orderby +" limit " + str(offset) + ",10")
     articles = c.fetchall()
     for article in articles:
         article['body'] = Markup(article['body'])
@@ -73,8 +88,9 @@ def index():
         "next_link" : url_for('index', offset=offset+10, **url_args),
         "prev_link" : url_for('index', offset=max(0, offset - 10), **url_args)
     }
-    return render_template('index.html', **args)
-
+    resp = make_response( render_template('index.html', **args) )
+    resp.set_cookie('_tid', trace_id())
+    return resp
 
 @app.route("/article/<int:article_id>")
 def article(article_id):
@@ -89,17 +105,22 @@ def article(article_id):
     }
     return render_template('index.html', **args)
 
-@app.route("/event/<string:evt_name>/<int:article_id>")
-def event(evt_name, article_id):
+@app.route("/event/<string:evt_name>")
+def event(evt_name):
     if evt_name not in ('show', 'click', 'like', 'hate'):
         ret = {'status' : 300, 'msg' : 'unknow event name ' + evt_name}
         resp = make_response(json.dumps(ret))
         resp.headers['Content-Type'] = 'application/json'
         return resp
 
+    tid = request.cookies.get('_tid', '')
+
     evt_attr = {
-        'article_id' : article_id
+        '_tid' : tid,
     }
+    for k in request.args:
+        evt_attr[k] = request.args[k]
+
     c = db.cursor()
     c.execute("INSERT INTO article_event (name, time, evt_attr) VALUES (%s, %s, %s)",
               (evt_name, int(time.time()),  json.dumps(evt_attr)))

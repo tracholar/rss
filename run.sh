@@ -11,3 +11,8 @@ sh run.sh
 cd $root
 cd analysis
 python man_text.py
+
+# gen rec
+cd $root
+cd recommend
+python rec.py
