@@ -72,7 +72,7 @@ def index():
     if rec:
         orderby = ' order by IFNULL(score, 0) + rand()*0.3 desc '
     else:
-        orderby = ' order by `date` desc '
+        orderby = ' order by left(`date`, 10) desc, MD5(id) '
 
     c.execute("select * from article " + where + orderby +" limit " + str(offset) + ",10")
     articles = c.fetchall()
