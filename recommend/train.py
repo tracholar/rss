@@ -5,6 +5,7 @@ from conf import mysql_conf
 import mysql.connector
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
+from sklearn.svm import SVC
 import pickle
 import hashlib
 import time
@@ -87,11 +88,11 @@ clf = pickle.load(open('like_model.bin', 'rb'))
 
 def predict(data):
     X, _ = feat_to_df(data)
-    return clf.predict_proba(X)
+    return clf.predict_log_proba(X)
 
 def train():
     X, y = get_data()
-    clf = LogisticRegression(penalty='l1', C=10.0, verbose=True)
+    clf = LogisticRegression(penalty='l1', C=5.0, verbose=True)
     clf.fit(X, y)
     print 'score:', clf.score(X, y)
     print 'w:', clf.coef_

@@ -70,7 +70,7 @@ def index():
         where = ''
 
     if rec:
-        orderby = ' order by IFNULL(score, 0) + rand()*0.1 desc '
+        orderby = ' order by IFNULL(score, 0) + rand()*0.3 desc '
     else:
         orderby = ' order by `date` desc '
 
