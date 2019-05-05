@@ -21,8 +21,8 @@ def element_to_text(e):
     return etree.tostring(e, encoding='utf-8', method="text")
 
 def extract_link_density(e):
-    info = [(i.tag, len(element_to_text(i))) for i in e.iter() if type(i.tag) is str]
-    text_n = sum(b[1] for b in info)
+    info = [(i.tag, len(element_to_text(i).replace(' ', ''))) for i in e.findall('.//a')]
+    text_n = len(element_to_text(e).replace(' ', ''))
     if text_n == 0:
         return 0
     return 1.0 * sum(b[1] for b in info if b[0].lower() in ('a')) / text_n
@@ -41,6 +41,35 @@ def extract_text_number(e):
 
 def extract_h_number(e):
     return len([b for b in e.iter() if type(b.tag) is str and b.tag.lower() in ('h1', 'h2', 'h3', 'h4', 'h5')])
+def extract_img_number(e):
+    return len([b for b in e.iter() if type(b.tag) is str and b.tag.lower()=='img'])
+def extract_form_elem_number(e):
+    return len([b for b in e.iter() if type(b.tag) is str and b.tag.lower() in ('form', 'input', 'textarea')])
+
+def extract_element_maxtextlen(e):
+    arr = re.findall(r'<.+?>([^<>]+?)</.+?>', element_to_html(e), re.S|re.U|re.M)
+    return max([0] + [len(x.replace(' ', '')) for x in arr])
+
+def extract_none_number(e):
+    return len(re.findall(r'none|hidden|hide', element_to_html(e)))
+def extract_side_number(e):
+    return len(re.findall(r'left|right|side', element_to_html(e)))
+def extract_main_number(e):
+    return len(re.findall(r'main|body|content', element_to_html(e)))
+
+def extract_child_div_number(e):
+    return len(e.findall('./div')) + len(e.findall('./section')) + len(e.findall('./article'))
+def extract_child_p_number(e):
+    return len(e.findall('./p')) + len(e.findall('./blockquote'))
+def extract_nv_number(e):
+    return len(re.findall(r'nav', element_to_html(e)))
+def extract_li_number(e):
+    return len(e.findall('.//li')) + len(e.findall('.//ol'))
+
+def extract_li_a_number(e):
+    return len([n for n in e.findall('.//li') if n.find('.//a') is not None]) + len([n for n in e.findall('.//ol') if n.find('.//a') is not None])
+def extract_h1_number(e):
+    return len(e.findall('.//h1'))
 
 def extract_feat(T):
     f_text_n = extract_text_number(T)
@@ -50,6 +79,34 @@ def extract_feat(T):
     f_link_density = extract_link_density(T)
     f_np_n = extract_np_number(T)
     return f_text_n, f_p_n, f_tag_n, f_h_n, f_link_density, f_np_n
+
+def extract_feat_v2(T):
+    if type(T) is unicode or type(T) is str:
+        T = html_to_element(T)
+
+    feat = {
+        'f_text_n' : extract_text_number(T),
+        'f_p_n' : extract_p_number(T),
+        'f_tag_n' : extract_tag_number(T),
+        'f_h_n' : extract_h_number(T),
+        'f_link_density' : extract_link_density(T),
+        'f_np_n' : extract_np_number(T),
+        'f_img_n' : extract_img_number(T),
+        'f_a_n' : extract_a_number(T),
+        'f_form_element_n' : extract_form_elem_number(T),
+        'f_element_maxtextlen' : extract_element_maxtextlen(T),
+        'f_none_n' : extract_none_number(T),
+        'f_side_n' : extract_side_number(T),
+        'f_main_n' : extract_main_number(T),
+        'f_child_div_n' : extract_child_div_number(T),
+        'f_child_p_n' : extract_child_p_number(T),
+        'f_nav_n' : extract_nv_number(T),
+        'f_li_n' : extract_li_number(T),
+        'f_li_a_n' : extract_li_a_number(T),
+        'f_h1_n' : extract_h1_number(T),
+    }
+
+    return feat
 
 def add_sample(html, y):
     parser = etree.HTMLParser()
@@ -70,23 +127,46 @@ def add_sample(html, y):
     finally:
         db.close()
 
+def ihash(s, m = 10**4):
+    import hashlib
+    digest = hashlib.md5(s).hexdigest()
+    return int(digest, 16) % m
+
+
 def feat_preprocess(feats):
     from math import log1p, log
     for feat in feats:
-        for f in ['f_p_n', 'f_tag_n', 'f_h_n', 'f_np_n', 'f_text_n']:
+        for f in ['f_p_n', 'f_tag_n', 'f_h_n', 'f_np_n', 'f_text_n', 'f_img_n' ,'f_a_n', 'f_form_element_n', 'f_element_maxtextlen' , 'f_none_n', 'f_side_n', 'f_main_n', 'f_child_div_n', 'f_child_p_n', 'f_nav_n', 'f_li_n', 'f_li_a_n', 'f_h1_n']:
             if f in feat and feat[f] is not None:
                 feat[f] = log1p(feat[f])
         if 'f_link_density' in feat:
             feat['f_link_density'] = log(1e-4 + feat['f_link_density'])
-    import pandas as pd
-    df = pd.DataFrame({
-        'f_p_n' : [f['f_p_n'] for f in feats],
-        'f_tag_n' : [f['f_tag_n'] for f in feats],
-        'f_h_n' : [f['f_h_n'] for f in feats],
-        'f_np_n' : [f['f_np_n'] for f in feats],
-        'f_text_n' : [f['f_text_n'] for f in feats],
-        'f_link_density' : [f['f_link_density'] for f in feats],
-    })
+    from scipy.sparse import csr_matrix
+    from math import log
+    d = []
+    row_ind = []
+    col_ind = []
+    # dense 最多1000维
+    sparse_offset = 1000
+    n_col = 10**4
+    for i, f in enumerate(feats):
+
+        for j, col in enumerate(['f_p_n', 'f_tag_n', 'f_h_n', 'f_np_n', 'f_text_n', 'f_img_n' ,'f_a_n', 'f_form_element_n', 'f_element_maxtextlen', 'f_none_n', 'f_side_n', 'f_main_n', 'f_child_div_n', 'f_child_p_n', 'f_link_density', 'f_nav_n', 'f_li_n', 'f_li_a_n', 'f_h1_n']):
+            if col in f:
+                # dense
+                d.append(f[col])
+                row_ind.append(i)
+                col_ind.append(j)
+
+                # sparse
+                v = int(f[col] * 3)
+                idx = ihash(col + ':' + str(v), n_col - sparse_offset) + sparse_offset
+                d.append(1.0)
+                row_ind.append(i)
+                col_ind.append(idx)
+
+
+    df = csr_matrix((d, (row_ind, col_ind)), shape=(len(feats), n_col))
     if len(feats) >0 and 'y' in feats[0]:
         y = [f['y'] for f in feats]
         return df, y
@@ -102,15 +182,17 @@ def train_model():
     )
     c = db.cursor(dictionary=True)
     try:
-        c.execute("select * from main_content_feat")
+        c.execute("select y, body from main_content_feat")
         feats = c.fetchall()
-        df, y = feat_preprocess(feats)
+        df = feat_preprocess([extract_feat_v2(feat['body']) for feat in feats])
+        y = [feat['y'] for feat in feats]
         from sklearn.svm import LinearSVC
-        clf = LinearSVC(C=1.0)
+        clf = LinearSVC(C=0.1, verbose=True, penalty='l1', dual=False)
         clf.fit(df, y)
         print '#sample', len(y)
         print 'clf', clf.coef_
         print 'score', clf.score(df, y)
+        print 'w:', ['{:d}:{:.3f}'.format(i, w) for i,w in enumerate(clf.coef_[0]) if abs(w)>0]
         import pickle
         fp = open('model.bin', 'wb')
         pickle.dump(clf, fp)

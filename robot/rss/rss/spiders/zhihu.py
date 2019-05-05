@@ -5,6 +5,7 @@ from scrapy.linkextractors import LinkExtractor
 from scrapy.spiders import  CrawlSpider
 from rss.items import RssItem
 from urlparse import urljoin
+import json
 
 
 class ZhiHuSpider(scrapy.Spider):
@@ -24,6 +25,7 @@ class ZhiHuSpider(scrapy.Spider):
         "hn.rednet.cn" : [r'/content/2'],
         "cn.investing.com" : [r'/news/'],
         "zhuanlan.zhihu.com" : [r'/p/'],
+        "www.jiqizhixin.com" : [r'/articles/']
     }
 
     allowed_domains = ["zhihu.com",
@@ -42,7 +44,8 @@ class ZhiHuSpider(scrapy.Spider):
                        "36kr.com",
                        "cnbeta.com",
                        "www.e0734.com", "hn.rednet.cn",
-                       "cn.investing.com"]
+                       "cn.investing.com",
+                       ]
 
     start_urls = [
         "https://www.zhihu.com/explore/recommendations",
@@ -76,7 +79,7 @@ class ZhiHuSpider(scrapy.Spider):
         "http://www.e0734.com/",
         "https://hn.rednet.cn/",
         "https://cn.investing.com/news/", "https://cn.investing.com/news/latest-news",
-        "https://zhuanlan.zhihu.com/paperweekly"
+        "https://www.jiqizhixin.com/columns/paperweekly",
     ]
 
     def match_url(self, url):
@@ -92,12 +95,23 @@ class ZhiHuSpider(scrapy.Spider):
 
         return True
     def parse(self, resp):
-        for sel in resp.xpath('//a'):
-            urls = sel.xpath('@href').extract()
-            for url in urls:
-                url = urljoin(resp.url, url)
-                if self.match_url(url):
-                    yield scrapy.Request(url, self.parse_body)
+        ctx_type = resp.headers.get('Content-Type')
+        if ctx_type is None:
+            return
+        ctx_type = ctx_type.lower()
+        urls = []
+        if ctx_type == 'application/json':
+            data = resp.content
+            urls = re.findall(r'https?://[^"\'><]', data, re.S|re.M|re.U|re.I)
+        elif ctx_type == 'text/html':
+            for sel in resp.xpath('//a'):
+                urls += sel.xpath('@href').extract()
+        else:
+            return
+        for url in urls:
+            url = urljoin(resp.url, url)
+            if self.match_url(url):
+                yield scrapy.Request(url, self.parse_body)
 
     def take_one(self, list_like):
         if type(list_like) is list:

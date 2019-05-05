@@ -1,9 +1,11 @@
 #coding:utf-8
 import sys
 sys.path.append('../analysis')
+sys.path.append('../conf')
 from flask import Flask
 from flask import render_template
-from flask import request, make_response, url_for, redirect, Markup
+from flask import request, make_response, url_for, redirect, Markup, g
+from conf import mysql_conf
 import mysql.connector
 import MySQLdb
 import json
@@ -13,12 +15,19 @@ from urllib import quote
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
-db = mysql.connector.connect(
-    host="localhost",
-    user="root",
-    passwd="123456",
-    database="rss"
-)
+def get_db():
+    if 'db' not in g:
+        g.db = mysql.connector.connect(**mysql_conf)
+    return g.db
+
+@app.after_request
+def close_db(e=None):
+    if 'db' in g:
+        db = g.pop('db', None)
+
+        if db is not None:
+            db.close()
+    return e
 
 @app.template_filter('url_domain')
 def url_domain(url):
@@ -54,9 +63,7 @@ def trace_id():
 
 @app.route("/")
 def index():
-    db.close()
-    db.reconnect()
-
+    db = get_db()
     c = db.cursor(dictionary=True)
     offset = safe_int(request.args.get('offset', 0))
     rec = safe_int(request.args.get('rec', 0))  # 推荐
@@ -64,6 +71,8 @@ def index():
     if 'site' in request.args:
         site = MySQLdb.escape_string(request.args.get('site'))
         where.append("link like '%{0}%'".format(site))
+    if 'like' in request.args:
+        where.append("n_like is not null and n_like>0")
     if len(where) > 0:
         where = ' where ' + ' AND '.join(where)
     else:
@@ -96,6 +105,7 @@ def index():
 
 @app.route("/article/<int:article_id>")
 def article(article_id):
+    db = get_db()
     c = db.cursor(dictionary=True)
     c.execute("select * from article where id=" + str(article_id))
     articles = c.fetchall()
@@ -123,6 +133,7 @@ def event(evt_name):
     for k in request.args:
         evt_attr[k] = request.args[k]
 
+    db = get_db()
     c = db.cursor()
     c.execute("INSERT INTO article_event (name, time, evt_attr) VALUES (%s, %s, %s)",
               (evt_name, int(time.time()),  json.dumps(evt_attr)))
@@ -133,6 +144,18 @@ def event(evt_name):
     resp.headers['Content-Type'] = 'application/json'
     return resp
 
+@app.route("/like/<int:article_id>")
+def like(article_id):
+    db = get_db()
+    c = db.cursor()
+    c.execute("UPDATE article SET n_like = IFNULL(n_like, 0) + 1 WHERE id = %s",
+              (article_id,))
+    db.commit()
+
+    ret = {'status' : 200}
+    resp = make_response(json.dumps(ret))
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
 
 @app.route("/jump")
 def jump():
@@ -179,6 +202,7 @@ def main_content_sample():
 
 @app.route('/tag_main_content')
 def tag_main_content():
+    db = get_db()
     if 'id' in request.args:
         where = ' where id = ' + str(safe_int(request.args.get('id')))
     else:
@@ -186,12 +210,12 @@ def tag_main_content():
     c = db.cursor(dictionary=True)
     c.execute("select * from rss " + where + " limit 1")
     article = c.fetchone()
-    from html_analysis import predict, element_to_html
+    from html_analysis import predict, element_to_html, extract_feat_v2
     parser = etree.HTMLParser()
     T = etree.parse(StringIO(article['body']), parser)
-    score = [(n,predict(n)) for n in T.iter() if type(n.tag) is str and n.tag.lower() in ('div', 'section', 'article')]
+    score = [(n,predict(n), extract_feat_v2(n)) for n in T.iter() if type(n.tag) is str and n.tag.lower() in ('div', 'section', 'article')]
     score.sort(key=lambda x: x[1], reverse=True)
-    articles = [{'body' : Markup(element_to_html(n), encoding='utf-8'), 'title': article['title'], 'link' : article['link'], 'date' : article['date'], 'extra' : 'score:' + str(v)} for n,v in score]
+    articles = [{'body' : Markup(element_to_html(n), encoding='utf-8'), 'title': article['title'], 'link' : article['link'], 'date' : article['date'], 'extra' : 'score:' + str(v) + '<br/>feat:' + str(f)} for n,v,f in score]
     #print articles
     return render_template('index.html', articles=articles)
 
