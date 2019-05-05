@@ -117,8 +117,8 @@
                 {% endfor %}
 
                 <div id="pagination">
-                    <a href="{{ prev_link }}" class="btn">上一页</a>
-                    <a href="{{ next_link }}" class="btn btn-primary">下一页</a>
+                    <a href="{{ prev_link|safe }}" class="btn">上一页</a>
+                    <a href="{{ next_link|safe }}" class="btn btn-primary">下一页</a>
                 </div>
             </div>
         </div>

@@ -103,11 +103,12 @@ class ZhiHuSpider(scrapy.Spider):
         if ctx_type == 'application/json':
             data = resp.content
             urls = re.findall(r'https?://[^"\'><]', data, re.S|re.M|re.U|re.I)
-        elif ctx_type == 'text/html':
+        elif re.match(r'^image', ctx_type):
+            return
+        else:
             for sel in resp.xpath('//a'):
                 urls += sel.xpath('@href').extract()
-        else:
-            return
+
         for url in urls:
             url = urljoin(resp.url, url)
             if self.match_url(url):
