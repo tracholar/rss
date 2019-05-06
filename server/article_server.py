@@ -4,7 +4,7 @@ sys.path.append('../analysis')
 sys.path.append('../conf')
 from flask import Flask
 from flask import render_template
-from flask import request, make_response, url_for, redirect, Markup, g
+from flask import request, make_response, url_for, redirect, Markup, g, current_app
 from conf import mysql_conf
 import mysql.connector
 import MySQLdb
@@ -41,6 +41,18 @@ def float3(x):
         x = -1.0
     return '{:.3f}'.format(float(x))
 
+
+
+@app.template_filter('article_tags')
+def article_tags(article_id):
+    if type(article_id) is not int:
+        return ''
+    db = get_db()
+    c = db.cursor(dictionary=True)
+    c.execute("select name from article_tags where article_id = %s", (article_id, ))
+    tags = c.fetchall()
+    return [tag['name'] for tag in tags]
+
 @app.route("/hello")
 def hello():
     return "Hello World!"
@@ -73,10 +85,13 @@ def index():
         where.append("link like '%{0}%'".format(site))
     if 'like' in request.args:
         where.append("n_like is not null and n_like>0")
+    if 'tag' in request.args:
+        where.append(" id in (select article_id from article_tags where name='" + MySQLdb.escape_string(request.args.get('tag').encode('utf-8')) + "')")
     if len(where) > 0:
         where = ' where ' + ' AND '.join(where)
     else:
         where = ''
+    print(str(where))
 
     if rec:
         orderby = ' order by IF(rand()<0.2, rand()*3-1.5, IFNULL(score, 0)) desc '

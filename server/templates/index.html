@@ -108,6 +108,13 @@
                             <span>{{ article.extra |safe }}</span>
                             {% endif %}
                         </div>
+                        <div>
+                            <p>TAG:
+                            {% for tag in article.id|article_tags %}
+                            <a href="{{ url_for('index', tag=tag) }}" class="btn btn-outline-success btn-sm">{{ tag }}</a>
+                            {% endfor %}
+                            </p>
+                        </div>
                     </div>
                     <div class="article-body brief">{{ article.body }}</div>
                     <div class="article-footer">
@@ -137,7 +144,7 @@
             if(refer.href == undefined || refer.href.length == 0) return;
             refer = refer.href;
 
-            var src = this.src;
+            var src = $(this).attr('src');
             if(src == undefined || src.length == 0){
                 src = $(this).data('src');
             }
