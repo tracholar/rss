@@ -5,6 +5,7 @@ from StringIO import StringIO
 import numpy as np
 import re
 import logging
+import jieba
 
 def html_to_element(html):
     parser = etree.HTMLParser()
@@ -187,7 +188,7 @@ def train_model():
         df = feat_preprocess([extract_feat_v2(feat['body']) for feat in feats])
         y = [feat['y'] for feat in feats]
         from sklearn.svm import LinearSVC
-        clf = LinearSVC(C=0.1, verbose=True, penalty='l1', dual=False)
+        clf = LinearSVC(C=0.1, verbose=True, penalty='l1', dual=False, max_iter=50000)
         clf.fit(df, y)
         print '#sample', len(y)
         print 'clf', clf.coef_
