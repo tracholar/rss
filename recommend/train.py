@@ -92,12 +92,12 @@ def predict(data):
 
 def train():
     X, y = get_data()
-    clf = LinearSVC(penalty='l1', dual=False, C=1, tol=1e-6, verbose=True)
+    clf = LinearSVC(penalty='l1', dual=False, C=0.1, tol=1e-6, max_iter=50000, verbose=True)
     clf.fit(X, y)
     print '#sample:', len(y)
     print 'score:', clf.score(X, y)
     print 'w:', clf.coef_
-    print 'nonzw:', [int(w*1e3)/1e3 for w in clf.coef_[0] if abs(w)>0]
+    print 'nonzw:', [(i,int(w*1e3)/1e3) for i,w in enumerate(clf.coef_[0]) if abs(w)>0]
     fp = open('like_model.bin', 'wb')
     pickle.dump(clf, fp)
     fp.close()

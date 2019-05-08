@@ -9,6 +9,7 @@ from lxml import etree
 from StringIO import StringIO
 from jieba import analyse
 from html_analysis import element_to_text, html_to_element
+import time
 
 def url_domain(url):
     from urlparse import urlparse
@@ -30,11 +31,49 @@ def gen_feat(row):
     feat['f_img_n'] = sum(1 for n in html_to_element(row['body']).iter() if n.tag in ('img', 'IMG'))
     return feat
 
+def get_user_current_feat():
+    db = mysql.connector.connect(**mysql_conf)
+    c = db.cursor(dictionary=True)
+    now = int(time.time())
+    sql = """
+        SELECT json_extract(a.evt_attr, '$.article_id') AS ids
+        FROM article_event
+        WHERE time > {} AND name in ('like', 'hate')
+    """.format(now - 3600*48)
+    c.execute(sql)
+    ids = []
+    for row in c.fetchall():
+        ids.extend([int(i) for i in row['ids'].split(',')])
+    ids = list(set(ids))
+    sql = """
+        SELECT title,body FROM article
+        WHERE id in ({})
+    """.format(','.join(ids))
+    c.execute(sql)
+    title_kw = []
+    content_kw = []
+    for row in c.fetchall():
+        body = element_to_text(row['body'])
+        title_kw.extend(utf8_en(t).lower() for t in analyse.extract_tags(row['title']))
+        content_kw.extend(utf8_en(t).lower() for t in analyse.extract_tags(body, topK=200))
+    title_kw = list(set(title_kw))
+    content_kw = list(set(content_kw))
+    c.close()
+    db.close()
+
+    return {
+        'title_kw': ','.join(title_kw),
+        'content_kw': ','.join(content_kw)
+    }
+
+
+
+
 def iter_data():
     db = mysql.connector.connect(**mysql_conf)
     c = db.cursor(dictionary=True)
-    c.execute("delete from article_feat")
-    db.commit()
+    #c.execute("delete from article_feat")
+    #db.commit()
 
     sql = """
             SELECT  b.id,
@@ -46,7 +85,9 @@ def iter_data():
             FROM article_event a
             JOIN article b
             ON cast(json_extract(a.evt_attr, '$.article_id') as SIGNED)=b.id
-            WHERE a.name IN ('like', 'hate')
+            WHERE a.name IN ('like', 'hate') AND b.id not in (
+                select id from article_feat
+            )
         """
     c.execute(sql)
     for row in c.fetchall():

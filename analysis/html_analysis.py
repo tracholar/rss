@@ -226,9 +226,13 @@ def predict(T):
     df = feat_preprocess([feat])
     return clf.decision_function(df)[0]
 
-def extract_main_content(html):
+def filter_script_css(html):
     html = re.sub(r'<(script|style).*?>.*?</(script|style)>', '', html, flags=re.MULTILINE|re.IGNORECASE|re.UNICODE|re.S)
     html = re.sub(r'</?body.*?>', '', html, flags=re.MULTILINE|re.IGNORECASE|re.UNICODE|re.S)
+    return html
+
+def extract_main_content(html):
+    html = filter_script_css(html)
 
     parser = etree.HTMLParser()
     T = etree.parse(StringIO(html), parser)

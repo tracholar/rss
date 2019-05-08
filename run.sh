@@ -12,6 +12,7 @@ cd $root
 cd analysis
 python train.py
 python man_text.py
+python create_tags.py
 
 # gen rec
 cd $root

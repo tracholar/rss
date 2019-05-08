@@ -10,7 +10,7 @@ import mysql.connector
 import MySQLdb
 import json
 import time
-from urllib import quote
+from html_analysis import filter_script_css
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -103,7 +103,7 @@ def index():
     c.execute("select * from article " + where + orderby +" limit " + str(offset) + ",10")
     articles = c.fetchall()
     for article in articles:
-        article['body'] = Markup(article['body'])
+        article['body'] = Markup(filter_script_css(article['body']))
 
     url_args = {}
     for k in request.args:
@@ -125,7 +125,7 @@ def article(article_id):
     c.execute("select * from article where id=" + str(article_id))
     articles = c.fetchall()
     for article in articles:
-        article['body'] = Markup(article['body'])
+        article['body'] = Markup(filter_script_css(article['body']))
 
     args = {
         "articles" : articles
@@ -230,7 +230,7 @@ def tag_main_content():
     T = etree.parse(StringIO(article['body']), parser)
     score = [(n,predict(n), extract_feat_v2(n)) for n in T.iter() if type(n.tag) is str and n.tag.lower() in ('div', 'section', 'article')]
     score.sort(key=lambda x: x[1], reverse=True)
-    articles = [{'body' : Markup(element_to_html(n), encoding='utf-8'), 'title': article['title'], 'link' : article['link'], 'date' : article['date'], 'extra' : 'score:' + str(v) + '<br/>feat:' + str(f)} for n,v,f in score]
+    articles = [{'body' : Markup(filter_script_css(element_to_html(n)), encoding='utf-8'), 'title': article['title'], 'link' : article['link'], 'date' : article['date'], 'extra' : 'score:' + str(v) + '<br/>feat:' + str(f)} for n,v,f in score]
     #print articles
     return render_template('index.html', articles=articles)
 
