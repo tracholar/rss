@@ -1,0 +1,87 @@
+<!doctype html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="/static/bootstrap.min.css">
+    <style style="text/css">
+        #main{
+            padding-top:65px;
+        }
+        .datetime{
+            color: #AAA;
+        }
+        .item{
+            padding: 2em;
+            border-bottom: 1px solid #AAA;
+            clear: both;
+        }
+        .item:hover{
+            background: rgba(250, 250, 250, 0.5);
+        }
+        .article-body img, .article-body svg{
+            max-width:600px !important;
+            max-height:300px !important;
+        }
+        .article-body.brief{
+            max-height: 300px;
+            overflow-y: hidden;
+        }
+        .article-footer{
+            width: 100%;
+            clear: both;
+        }
+        #pagination{
+            clear: both;
+        }
+        .like-btn,.hate-btn{
+            margin-left:1em;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top bg-dark">
+    <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">文章推荐</a>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+            <li class="nav-item active">
+                <a class="nav-link" href="/">Home <span class="sr-only">(current)</span></a>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" id="navbarDropdown" href="#" role="button">来源</a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <a class="dropdown-item" href="/?rec=1&site=cnbeta.com">www.cnbeta.com</a>
+                </div>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/?orderby=date%20desc">日期</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/?rec=1">推荐</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/?like=1">收藏</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/tag_main_content">打标</a>
+            </li>
+        </ul>
+    </div>
+    <form class="form-inline" method="get" action="/search">
+        <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="q">
+        <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+    </form>
+</nav>
+
+<div class="container-fluid" id="main">
+    {% block content %}{% endblock %}}
+</div>
+
+
+<script src="/static/jquery.min.js"></script>
+<script src="/static/popper.min.js"></script>
+<script src="/static/bootstrap.min.js"></script>
+
+{% block script %}{% endblock %}
+</body>

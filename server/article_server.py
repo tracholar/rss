@@ -213,6 +213,25 @@ def main_content_sample():
     add_sample(html, y)
     return make_response('')
 
+@app.route('/main_content_sample/del/<int:id>')
+def del_main_content_sample(id):
+    from html_analysis import remove_sample
+    remove_sample(id)
+    return redirect(url_for('show_main_content_sample'))
+
+@app.route('/main_content_sample/show')
+def show_main_content_sample():
+    db = get_db()
+    c = db.cursor(dictionary=True)
+    c.execute("select id, body, y from main_content_feat order by rand() limit 1")
+    articles = c.fetchall()
+
+    from html_analysis import predict, extract_feat_v2
+    for article in articles:
+        article['score'] = predict(article['body'])
+        article['feat'] = str(extract_feat_v2(article['body']))
+    return render_template('main_content_sample.html', articles=articles)
+
 
 
 @app.route('/tag_main_content')

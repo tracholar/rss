@@ -135,6 +135,21 @@ def add_sample(html, y):
     finally:
         db.close()
 
+def remove_sample(i):
+    import mysql.connector
+    db = mysql.connector.connect(
+        host="localhost",
+        user="root",
+        passwd="123456",
+        database="rss"
+    )
+    try:
+        c = db.cursor()
+        c.execute('delete from main_content_feat where id = %s', (i, ))
+        db.commit()
+    finally:
+        db.close()
+
 def ihash(s, m = 10**4):
     import hashlib
     digest = hashlib.md5(s).hexdigest()
@@ -198,25 +213,9 @@ def train_model():
         df = [extract_feat_v2(feat['body']) for feat in feats]
         y = [feat['y'] for feat in feats]
         from sklearn.svm import LinearSVC
-        from sklearn.model_selection import cross_validate, KFold
-        kf = KFold(n_splits=3, shuffle=True)
-        best_C = 0.01
-        best_score = 0
-        for C in [0.01,0.03,0.1,0.3,1,3,10]:
-            clf = LinearSVC(C=C, verbose=True, penalty='l1', dual=False, max_iter=50000)
-            score = 0
-            for train, test in kf.split(df, y):
-                X_train, y_train, X_test, y_test = feat_preprocess(array_index(df, train)), array_index(y, train), feat_preprocess(array_index(df, test)), array_index(y, test)
-                clf.fit(X_train, y_train)
-                score += clf.score(X_test, y_test)
-            score /= 3
-            if score > best_score:
-                best_C = C
-                best_score = score
-        print 'best_C', best_C, 'best_score', best_score
 
         df = feat_preprocess(df)
-        clf = LinearSVC(C=best_C, verbose=True, penalty='l1', dual=False, max_iter=50000)
+        clf = LinearSVC(C=0.1, verbose=True, penalty='l1', dual=False, max_iter=50000)
         clf.fit(df, y)
         print '#sample', len(y)
         print 'clf', clf.coef_
@@ -238,19 +237,11 @@ except Exception:
     pass
 
 def predict(T):
-    if type(T) is str:
+    if type(T) is str or type(T) is unicode:
         parser = etree.HTMLParser()
         T = etree.parse(StringIO(T), parser)
 
-    f_text_n, f_p_n, f_tag_n, f_h_n, f_link_density, f_np_n = extract_feat(T)
-    feat = {
-        'f_text_n' : f_text_n,
-        'f_p_n' : f_p_n,
-        'f_tag_n' : f_tag_n,
-        'f_h_n' : f_h_n,
-        'f_link_density' : f_link_density,
-        'f_np_n' : f_np_n
-    }
+    feat = extract_feat_v2(T)
     df = feat_preprocess([feat])
     return clf.decision_function(df)[0]
 
