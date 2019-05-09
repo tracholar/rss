@@ -71,7 +71,12 @@ def extract_li_a_number(e):
     return len([n for n in e.findall('.//li') if n.find('.//a') is not None]) + len([n for n in e.findall('.//ol') if n.find('.//a') is not None])
 def extract_h1_number(e):
     return len(e.findall('.//h1'))
-
+def extract_dom_depth(e):
+    return max([0] + [extract_dom_depth(n) + 1 for n in e.findall('./*')])
+def extract_depth_to_p(e):
+    if hasattr(e, 'tag') and e.tag in ('p','P', 'blockquote'):
+        return 0
+    return min([20] + [extract_depth_to_p(n) + 1 for n in e.findall('./*')])
 def extract_feat(T):
     f_text_n = extract_text_number(T)
     f_p_n = extract_p_number(T)
@@ -105,6 +110,8 @@ def extract_feat_v2(T):
         'f_li_n' : extract_li_number(T),
         'f_li_a_n' : extract_li_a_number(T),
         'f_h1_n' : extract_h1_number(T),
+        'f_dom_depth' : extract_dom_depth(T),
+        'f_depth_to_p' : extract_depth_to_p(T),
     }
 
     return feat
@@ -133,11 +140,12 @@ def ihash(s, m = 10**4):
     digest = hashlib.md5(s).hexdigest()
     return int(digest, 16) % m
 
-
+import copy
 def feat_preprocess(feats):
     from math import log1p, log
+    feats = copy.deepcopy(feats)
     for feat in feats:
-        for f in ['f_p_n', 'f_tag_n', 'f_h_n', 'f_np_n', 'f_text_n', 'f_img_n' ,'f_a_n', 'f_form_element_n', 'f_element_maxtextlen' , 'f_none_n', 'f_side_n', 'f_main_n', 'f_child_div_n', 'f_child_p_n', 'f_nav_n', 'f_li_n', 'f_li_a_n', 'f_h1_n']:
+        for f in ['f_p_n', 'f_tag_n', 'f_h_n', 'f_np_n', 'f_text_n', 'f_img_n' ,'f_a_n', 'f_form_element_n', 'f_element_maxtextlen' , 'f_none_n', 'f_side_n', 'f_main_n', 'f_child_div_n', 'f_child_p_n', 'f_nav_n', 'f_li_n', 'f_li_a_n', 'f_h1_n', 'f_dom_depth', 'f_depth_to_p']:
             if f in feat and feat[f] is not None:
                 feat[f] = log1p(feat[f])
         if 'f_link_density' in feat:
@@ -152,7 +160,7 @@ def feat_preprocess(feats):
     n_col = 10**4
     for i, f in enumerate(feats):
 
-        for j, col in enumerate(['f_p_n', 'f_tag_n', 'f_h_n', 'f_np_n', 'f_text_n', 'f_img_n' ,'f_a_n', 'f_form_element_n', 'f_element_maxtextlen', 'f_none_n', 'f_side_n', 'f_main_n', 'f_child_div_n', 'f_child_p_n', 'f_link_density', 'f_nav_n', 'f_li_n', 'f_li_a_n', 'f_h1_n']):
+        for j, col in enumerate(['f_p_n', 'f_tag_n', 'f_h_n', 'f_np_n', 'f_text_n', 'f_img_n' ,'f_a_n', 'f_form_element_n', 'f_element_maxtextlen', 'f_none_n', 'f_side_n', 'f_main_n', 'f_child_div_n', 'f_child_p_n', 'f_link_density', 'f_nav_n', 'f_li_n', 'f_li_a_n', 'f_h1_n', 'f_dom_depth', 'f_depth_to_p']):
             if col in f:
                 # dense
                 d.append(f[col])
@@ -172,6 +180,8 @@ def feat_preprocess(feats):
         y = [f['y'] for f in feats]
         return df, y
     return df
+def array_index(arr, idx):
+    return [arr[i] for i in idx]
 
 def train_model():
     import mysql.connector
@@ -185,15 +195,33 @@ def train_model():
     try:
         c.execute("select y, body from main_content_feat")
         feats = c.fetchall()
-        df = feat_preprocess([extract_feat_v2(feat['body']) for feat in feats])
+        df = [extract_feat_v2(feat['body']) for feat in feats]
         y = [feat['y'] for feat in feats]
         from sklearn.svm import LinearSVC
-        clf = LinearSVC(C=0.1, verbose=True, penalty='l1', dual=False, max_iter=50000)
+        from sklearn.model_selection import cross_validate, KFold
+        kf = KFold(n_splits=3, shuffle=True)
+        best_C = 0.01
+        best_score = 0
+        for C in [0.01,0.03,0.1,0.3,1,3,10]:
+            clf = LinearSVC(C=C, verbose=True, penalty='l1', dual=False, max_iter=50000)
+            score = 0
+            for train, test in kf.split(df, y):
+                X_train, y_train, X_test, y_test = feat_preprocess(array_index(df, train)), array_index(y, train), feat_preprocess(array_index(df, test)), array_index(y, test)
+                clf.fit(X_train, y_train)
+                score += clf.score(X_test, y_test)
+            score /= 3
+            if score > best_score:
+                best_C = C
+                best_score = score
+        print 'best_C', best_C, 'best_score', best_score
+
+        df = feat_preprocess(df)
+        clf = LinearSVC(C=best_C, verbose=True, penalty='l1', dual=False, max_iter=50000)
         clf.fit(df, y)
         print '#sample', len(y)
         print 'clf', clf.coef_
         print 'score', clf.score(df, y)
-        print 'w:', ['{:d}:{:.3f}'.format(i, w) for i,w in enumerate(clf.coef_[0]) if abs(w)>0]
+        print 'w:', [(i, int(w*1e3)/1000.0) for i,w in enumerate(clf.coef_[0]) if abs(w)>0]
         import pickle
         fp = open('model.bin', 'wb')
         pickle.dump(clf, fp)
@@ -227,7 +255,7 @@ def predict(T):
     return clf.decision_function(df)[0]
 
 def filter_script_css(html):
-    html = re.sub(r'<(script|style).*?>.*?</(script|style)>', '', html, flags=re.MULTILINE|re.IGNORECASE|re.UNICODE|re.S)
+    html = re.sub(r'<(script|style|embed).*?>.*?</(script|style|embed)>', '', html, flags=re.MULTILINE|re.IGNORECASE|re.UNICODE|re.S)
     html = re.sub(r'</?body.*?>', '', html, flags=re.MULTILINE|re.IGNORECASE|re.UNICODE|re.S)
     return html
 
