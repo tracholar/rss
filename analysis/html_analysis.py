@@ -215,7 +215,7 @@ def train_model():
         from sklearn.svm import LinearSVC
 
         df = feat_preprocess(df)
-        clf = LinearSVC(C=0.1, verbose=True, penalty='l1', dual=False, max_iter=50000)
+        clf = LinearSVC(C=0.3, verbose=True, penalty='l1', dual=False, max_iter=50000)
         clf.fit(df, y)
         print '#sample', len(y)
         print 'clf', clf.coef_
@@ -246,7 +246,7 @@ def predict(T):
     return clf.decision_function(df)[0]
 
 def filter_script_css(html):
-    html = re.sub(r'<(script|style|embed).*?>.*?</(script|style|embed)>', '', html, flags=re.MULTILINE|re.IGNORECASE|re.UNICODE|re.S)
+    html = re.sub(r'<(script|style|embed|object).*?>.*?</(script|style|embed|object)>', '', html, flags=re.MULTILINE|re.IGNORECASE|re.UNICODE|re.S)
     html = re.sub(r'</?body.*?>', '', html, flags=re.MULTILINE|re.IGNORECASE|re.UNICODE|re.S)
     return html
 
