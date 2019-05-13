@@ -77,6 +77,11 @@ def extract_depth_to_p(e):
     if hasattr(e, 'tag') and e.tag in ('p','P', 'blockquote'):
         return 0
     return min([20] + [extract_depth_to_p(n) + 1 for n in e.findall('./*')])
+
+def extract_all_tags(e):
+    tags = set(n.tag for n in e.iter() if hasattr(e, 'tag') and n.tag is not None)
+    return list(tags)
+
 def extract_feat(T):
     f_text_n = extract_text_number(T)
     f_p_n = extract_p_number(T)
@@ -112,6 +117,7 @@ def extract_feat_v2(T):
         'f_h1_n' : extract_h1_number(T),
         'f_dom_depth' : extract_dom_depth(T),
         'f_depth_to_p' : extract_depth_to_p(T),
+        'f_all_tags' : extract_all_tags(T),
     }
 
     return feat
@@ -175,6 +181,7 @@ def feat_preprocess(feats):
     n_col = 10**4
     for i, f in enumerate(feats):
 
+        ## dense feature
         for j, col in enumerate(['f_p_n', 'f_tag_n', 'f_h_n', 'f_np_n', 'f_text_n', 'f_img_n' ,'f_a_n', 'f_form_element_n', 'f_element_maxtextlen', 'f_none_n', 'f_side_n', 'f_main_n', 'f_child_div_n', 'f_child_p_n', 'f_link_density', 'f_nav_n', 'f_li_n', 'f_li_a_n', 'f_h1_n', 'f_dom_depth', 'f_depth_to_p']):
             if col in f:
                 # dense
@@ -188,6 +195,21 @@ def feat_preprocess(feats):
                 d.append(1.0)
                 row_ind.append(i)
                 col_ind.append(idx)
+
+        ## sparse feature
+        for col in ['f_all_tags']:
+            if col in f:
+                if type(f[col]) in (set, list):
+                    for v in f[col]:
+                        idx = ihash(col + ':' + str(v), n_col - sparse_offset) + sparse_offset
+                        d.append(1.0)
+                        row_ind.append(i)
+                        col_ind.append(idx)
+                else:
+                    idx = ihash(col + ':' + str(f[col]), n_col - sparse_offset) + sparse_offset
+                    d.append(1.0)
+                    row_ind.append(i)
+                    col_ind.append(idx)
 
 
     df = csr_matrix((d, (row_ind, col_ind)), shape=(len(feats), n_col))
@@ -215,7 +237,7 @@ def train_model():
         from sklearn.svm import LinearSVC
 
         df = feat_preprocess(df)
-        clf = LinearSVC(C=0.3, verbose=True, penalty='l1', dual=False, max_iter=50000)
+        clf = LinearSVC(C=0.05, verbose=True, penalty='l1', dual=False, max_iter=50000)
         clf.fit(df, y)
         print '#sample', len(y)
         print 'clf', clf.coef_
@@ -229,13 +251,18 @@ def train_model():
         db.close()
 
 import pickle
-try:
-    fp = open('../analysis/model.bin', 'rb')
-    clf = pickle.load(fp)
-    fp.close()
-except Exception:
-    pass
 
+def get_clf():
+    try:
+        from os.path import dirname
+        fp = open(dirname(__file__) + '/model.bin', 'rb')
+        clf = pickle.load(fp)
+        fp.close()
+        return clf
+    except Exception as e:
+        raise e
+
+clf = get_clf()
 def predict(T):
     if type(T) is str or type(T) is unicode:
         parser = etree.HTMLParser()

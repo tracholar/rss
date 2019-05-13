@@ -1,7 +1,6 @@
 #coding:utf-8
 import sys
-sys.path.append('../conf')
-from conf import mysql_conf
+from conf.conf import mysql_conf
 import mysql.connector
 import pandas as pd
 from sklearn.linear_model import LogisticRegression, ElasticNet, SGDClassifier
@@ -84,7 +83,8 @@ def get_data():
     X, y = feat_to_df(data)
     return X,y
 
-clf = pickle.load(open('like_model.bin', 'rb'))
+from os.path import dirname
+clf = pickle.load(open(dirname(__file__) + '/like_model.bin', 'rb'))
 
 def predict(data):
     X, _ = feat_to_df(data)

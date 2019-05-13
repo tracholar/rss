@@ -9,13 +9,11 @@ sh run.sh
 
 # gen index
 cd $root
-cd analysis
-python train.py
-python man_text.py
-python create_tags.py
+python -m analysis.train
+python -m analysis.man_text
+python -m analysis.create_tags
 
 # gen rec
 cd $root
-cd recommend
-python train.py
-python rec.py
+python -m recommend.train
+python -m recommend.rec

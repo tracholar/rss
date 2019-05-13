@@ -1,14 +1,12 @@
 #coding:utf-8
 import sys
-sys.path.append('../analysis')
-sys.path.append('../conf')
-from conf import mysql_conf
+from conf.conf import mysql_conf
 import mysql.connector
 from readability import Document
 from lxml import etree
 from StringIO import StringIO
 from jieba import analyse
-from html_analysis import element_to_text, html_to_element
+from analysis.html_analysis import element_to_text, html_to_element
 import time
 
 def url_domain(url):

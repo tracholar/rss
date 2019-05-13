@@ -1,16 +1,14 @@
 #coding:utf-8
 import sys
-sys.path.append('../analysis')
-sys.path.append('../conf')
 from flask import Flask
 from flask import render_template
 from flask import request, make_response, url_for, redirect, Markup, g, current_app
-from conf import mysql_conf
+from conf.conf import mysql_conf
 import mysql.connector
 import MySQLdb
 import json
 import time
-from html_analysis import filter_script_css
+from analysis.html_analysis import filter_script_css
 
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
@@ -96,7 +94,7 @@ def index():
     if rec:
         orderby = ' order by IF(rand()<0.2, rand()*3-1.5, IFNULL(score, 0)) desc '
     elif 'orderby' not in request.args:
-        orderby = ' order by left(`date`, 10) desc, CAST(IF(rand()<0.2, rand()*4-2, IFNULL(score, 0))*3 AS SIGNED) desc, MD5(id) '
+        orderby = ' order by left(`date`, 10) desc, CAST(IF(rand()<0.1, rand()*3-1.5, IFNULL(score, 0))*3 AS SIGNED) desc, MD5(id) '
     elif 'orderby' in request.args:
         orderby = ' order by ' + request.args['orderby'] + ' '
 
@@ -209,13 +207,13 @@ def main_content_sample():
     else:
         y = -1
 
-    from html_analysis import add_sample
+    from analysis.html_analysis import add_sample
     add_sample(html, y)
     return make_response('')
 
 @app.route('/main_content_sample/del/<int:id>')
 def del_main_content_sample(id):
-    from html_analysis import remove_sample
+    from analysis.html_analysis import remove_sample
     remove_sample(id)
     return redirect(url_for('show_main_content_sample'))
 
@@ -226,7 +224,7 @@ def show_main_content_sample():
     c.execute("select id, body, y from main_content_feat order by rand() limit 1")
     articles = c.fetchall()
 
-    from html_analysis import predict, extract_feat_v2
+    from analysis.html_analysis import predict, extract_feat_v2
     for article in articles:
         article['score'] = predict(article['body'])
         article['feat'] = str(extract_feat_v2(article['body']))
@@ -244,13 +242,21 @@ def tag_main_content():
     c = db.cursor(dictionary=True)
     c.execute("select * from rss " + where + " limit 1")
     article = c.fetchone()
-    from html_analysis import predict, element_to_html, extract_feat_v2
+    from analysis.html_analysis import predict, element_to_html, extract_feat_v2
     parser = etree.HTMLParser()
     T = etree.parse(StringIO(article['body']), parser)
     score = [(n,predict(n), extract_feat_v2(n)) for n in T.iter() if type(n.tag) is str and n.tag.lower() in ('div', 'section', 'article')]
     score.sort(key=lambda x: x[1], reverse=True)
     articles = [{'body' : Markup(filter_script_css(element_to_html(n)), encoding='utf-8'), 'title': article['title'], 'link' : article['link'], 'date' : article['date'], 'extra' : 'score:' + str(v) + '<br/>feat:' + str(f)} for n,v,f in score]
     #print articles
+    return render_template('index.html', articles=articles)
+
+@app.route('/daily-rec')
+def daily_rec():
+    from recommend.rec import gen_rec_article_list
+    articles = gen_rec_article_list()
+    for article in articles:
+        article['body'] = Markup(filter_script_css(article['body']))
     return render_template('index.html', articles=articles)
 
 if __name__ == '__main__':

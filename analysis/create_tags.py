@@ -1,7 +1,6 @@
 #coding:utf-8
 import sys
-sys.path.append('../conf')
-from conf import mysql_conf
+from conf.conf import mysql_conf
 
 import mysql.connector
 import jieba
