@@ -70,15 +70,11 @@ def gen_rec_article_list(top = 50):
 if __name__ == '__main__':
     calc_rec_score()
 
-    from jinja2 import Environment, PackageLoader, select_autoescape
-    env = Environment(
-        loader=PackageLoader('recommend', 'templates'),
-        autoescape=select_autoescape(['html', 'xml'])
-    )
-
-    template = env.get_template('articles.html')
-
-    fp = open("rec.html", 'wb')
-    html = template.render(articles = gen_rec_article_list())
-    fp.write(html.encode('utf-8'))
+    import json
+    fp = open("rec.json", 'w')
+    data = {
+        'updateTime' : time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
+        'articles' : gen_rec_article_list()
+    }
+    fp.write(json.dumps(data, encoding='utf-8'))
     fp.close()
