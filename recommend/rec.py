@@ -29,7 +29,7 @@ def calc_rec_score(all = False):
 def gen_rec_article_list(top = 50):
     db = mysql.connector.connect(**mysql_conf)
     c = db.cursor(dictionary=True)
-    c.execute("SELECT * FROM article where score > 0.1 AND date > '{}' ".format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() - 24*3600))))
+    c.execute("SELECT * FROM article where score > 0.1 AND date > '{}' ".format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() - 48*3600))))
     articles = c.fetchall()
     articles.sort(key=lambda x : x['score'], reverse=True)
 
