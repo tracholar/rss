@@ -29,7 +29,7 @@ def calc_rec_score(all = False):
 def gen_rec_article_list(top = 50):
     db = mysql.connector.connect(**mysql_conf)
     c = db.cursor(dictionary=True)
-    c.execute("SELECT * FROM article where score > 0.1 AND left(date, 10) = '{}' ".format(time.strftime('%Y-%m-%d', time.localtime())))
+    c.execute("SELECT * FROM article where score > 0.1 AND date > '{}' ".format(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time() - 24*3600))))
     articles = c.fetchall()
     articles.sort(key=lambda x : x['score'], reverse=True)
 
@@ -71,10 +71,11 @@ if __name__ == '__main__':
     calc_rec_score()
 
     import json
-    fp = open("rec.json", 'w')
+    from os.path import dirname
+    fp = open(dirname(__file__) + "/rec.json", 'w')
     data = {
         'updateTime' : time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
-        'articles' : gen_rec_article_list()
+        'articles' : gen_rec_article_list(500)
     }
     fp.write(json.dumps(data, encoding='utf-8'))
     fp.close()

@@ -17,3 +17,7 @@ python -m analysis.create_tags
 cd $root
 python -m recommend.train
 python -m recommend.rec
+
+git add recommend/rec.json
+git commit -m 'update rec.json'
+git push
