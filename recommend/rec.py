@@ -75,7 +75,7 @@ if __name__ == '__main__':
     fp = open(dirname(__file__) + "/rec.json", 'w')
     data = {
         'updateTime' : time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()),
-        'articles' : gen_rec_article_list(500)
+        'articles' : gen_rec_article_list(5000)
     }
     fp.write(json.dumps(data, encoding='utf-8'))
     fp.close()
