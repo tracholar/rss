@@ -295,10 +295,10 @@ def extract_main_content(html):
 if __name__ == '__main__':
     from urllib2 import urlopen
 
-    data = urlopen('https://arxiv.org/abs/1703.04782').read()
+    data = urlopen('https://phys.org/news/2019-05-team-green-chemistry-breakthrough-renewables.html').read()
 
     T = extract_main_content(data)
-    fp = open('content.html', 'w')
+    fp = open('/tmp/content.html', 'w')
     fp.write(T)
     fp.close()
     print T

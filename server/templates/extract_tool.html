@@ -1,0 +1,43 @@
+{% extends 'layout.html' %}
+
+{% block title %}网页主要内容提取{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="row item">
+            <div class="article-header col-md-11">
+                <form method="get" action="{{ url_for('extract_tool') }}">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="URL" aria-label="Username" aria-describedby="basic-addon1" name="url" value="{{ request.args.get('url') }}">
+                        <div class="input-group-append">
+                            <input type="submit" value="提取" class="btn btn-outline-secondary">
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="article-body">{{ html | safe }}</div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script type="text/javascript">
+        $('img').each(function(){
+            var refer = $(this).parents('.item').find('.article-header h2 a');
+            if(refer.length == 0) return;
+            refer = refer[0];
+            if(refer.href == undefined || refer.href.length == 0) return;
+            refer = refer.href;
+
+            var src = $(this).attr('src');
+            if(src == undefined || src.length == 0){
+                src = $(this).data('src');
+            }
+            if(refer != undefined && src != undefined && !src.startsWith('data:')){
+                this.src = '/src?refer=' + encodeURIComponent(refer) + '&url=' + encodeURIComponent(src);
+            }
+        })
+</script>
+{% endblock %}

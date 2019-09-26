@@ -92,9 +92,9 @@ def index():
     print(str(where))
 
     if rec:
-        orderby = ' order by IF(rand()<0.2, rand()*3-1.5, IFNULL(score, 0)) desc '
+        orderby = ' order by IFNULL(score, 0) desc '
     elif 'orderby' not in request.args:
-        orderby = ' order by left(`date`, 10) desc, CAST(IF(rand()<0.1, rand()*3-1.5, IFNULL(score, 0))*3 AS SIGNED) desc, MD5(id) '
+        orderby = ' order by left(`date`, 10) desc, IFNULL(score, 0) desc, MD5(id) '
     elif 'orderby' in request.args:
         orderby = ' order by ' + request.args['orderby'] + ' '
 
@@ -259,5 +259,21 @@ def daily_rec():
         article['body'] = Markup(filter_script_css(article['body']))
     return render_template('index.html', articles=articles)
 
+@app.route('/extract_tool')
+def extract_tool():
+    url = request.args.get('url', '')
+    html = ''
+    if len(url) > 0 and  url.startswith('http'):
+        from urllib2 import urlopen
+        from analysis.html_analysis import extract_main_content
+        try:
+            data = urlopen(url).read()
+
+            html = extract_main_content(data).decode('utf-8')
+        except Exception as e:
+            html = str(e).decode('utf-8')
+
+    return render_template('extract_tool.html', html=html)
+
 if __name__ == '__main__':
-    app.run(threaded=True)
+    app.run(threaded=True, debug=True)
