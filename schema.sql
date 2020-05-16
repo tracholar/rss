@@ -157,3 +157,14 @@ CREATE TABLE `user_feat` (
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2019-05-06 20:07:54
+
+
+CREATE TABLE `features` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `entity` varchar(16) NOT NULL,
+  `entity_id` int(11) NOT NULL,
+  `name` varchar(32) NOT NULL COMMENT 'feature name',
+  `feats` text COMMENT 'feature JSON',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `entity_id_name` (`entity`,`entity_id`, `name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;

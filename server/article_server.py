@@ -55,9 +55,19 @@ def article_tags(article_id):
 def hello():
     return "Hello World!"
 
+@app.route("/test_data")
+def test_data():
+    db = get_db()
+    c = db.cursor(dictionary=True)
+    c.execute("select * from article order by `date` desc limit 10")
+    articles = c.fetchall()
+    for article in articles:
+        article['body'] = Markup(filter_script_css(article['body']))
+    #return json.dumps(articles, ensure_ascii=False)
+    return render_template('index.html', articles=articles)
 
 
-from lxml import etree
+    from lxml import etree
 from StringIO import StringIO
 import re
 

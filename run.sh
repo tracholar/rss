@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 root=$(cd `dirname $0`; pwd)
 echo $root
+
+export PYTHONPATH=$PYTHONPATH:$root
+
 cd $root
 
 # crawl
@@ -15,9 +18,5 @@ python -m analysis.create_tags
 
 # gen rec
 cd $root
-python -m recommend.train
-python -m recommend.rec
-
-git add recommend/rec.json
-git commit -m 'update rec.json'
-git push
+python recommend/train.py
+python recommend/rec.py
