@@ -1,12 +1,16 @@
 #coding:utf-8
 """计算推荐得分"""
-import sys
+
+import time
+
+import mysql.connector
 
 from conf.conf import mysql_conf
-import mysql.connector
 from feat import gen_feat
 from train import predict
-import datetime, time
+
+
+
 
 def calc_rec_score(all = False):
     db = mysql.connector.connect(**mysql_conf)
@@ -33,7 +37,7 @@ def gen_rec_article_list(top = 50):
     articles = c.fetchall()
     articles.sort(key=lambda x : x['score'], reverse=True)
 
-    from urlparse import urlparse, urljoin, urlsplit
+    from urlparse import urlparse
     for article in articles:
         netloc = urlparse(article['link']).netloc
         article['body'] = article['body'].replace('src="/', 'src=' + netloc + '/')\

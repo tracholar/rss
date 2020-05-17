@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 import sys
 from conf.conf import mysql_conf
 import mysql.connector
@@ -9,15 +9,27 @@ from jieba import analyse
 from analysis.html_analysis import element_to_text, html_to_element
 import time
 
+
+class FeatureProvider(object):
+    def __init__(self):
+        pass
+
+
+
+
 def url_domain(url):
     from urlparse import urlparse
     obj = urlparse(url)
     return obj.netloc
+
+
 def utf8_en(data):
     if type(data) is unicode:
         return data.encode('utf-8')
     data = str(data)
     return data.encode('utf-8')
+
+
 def gen_feat(row):
     body = element_to_text(row['body'])
     feat = {}
@@ -29,6 +41,7 @@ def gen_feat(row):
     feat['f_img_n'] = sum(1 for n in html_to_element(row['body']).iter() if n.tag in ('img', 'IMG'))
     return feat
 
+
 def get_user_current_feat():
     db = mysql.connector.connect(**mysql_conf)
     c = db.cursor(dictionary=True)
@@ -37,7 +50,7 @@ def get_user_current_feat():
         SELECT json_extract(a.evt_attr, '$.article_id') AS ids
         FROM article_event
         WHERE time > {} AND name in ('like', 'hate')
-    """.format(now - 3600*48)
+    """.format(now - 3600 * 48)
     c.execute(sql)
     ids = []
     for row in c.fetchall():
@@ -65,13 +78,11 @@ def get_user_current_feat():
     }
 
 
-
-
 def iter_data():
     db = mysql.connector.connect(**mysql_conf)
     c = db.cursor(dictionary=True)
-    #c.execute("delete from article_feat")
-    #db.commit()
+    # c.execute("delete from article_feat")
+    # db.commit()
 
     sql = """
             SELECT  b.id,
@@ -101,6 +112,7 @@ def iter_data():
         print '>>>', aid, '>>>', row['title']
     db.commit()
     db.close()
+
 
 if __name__ == '__main__':
     iter_data()
