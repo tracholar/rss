@@ -70,7 +70,7 @@ def _get_user_current_feat():
 
     return [
         ListCatFeature(1, 'title_kw', title_kw),
-        ListCatFeature(1, 'content_kw', content_kw)
+        ListCatFeature(2, 'content_kw', content_kw)
     ]
 
 
