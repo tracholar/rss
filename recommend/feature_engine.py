@@ -28,52 +28,10 @@ def f_hash(s):
     digest = hashlib.md5(s).hexdigest()
     return int(digest, 16) % m
 
-
-def _get_user_current_feat():
-    db = mysql.connector.connect(**mysql_conf)
-    c = db.cursor(dictionary=True)
-    now = int(time.time())
-    sql = """
-        SELECT json_extract(a.evt_attr, '$.article_id') AS ids
-        FROM article_event a
-        WHERE time > {} AND name in ('like', 'hate')
-    """.format(now - 3600 * 48)
-
-    logging.info('SQL:{}'.format(sql))
-    c.execute(sql)
-
-    ids = []
-    for row in c.fetchall():
-        ids.extend([i for i in row['ids'].replace('"', '').split(',')])
-    ids = list(set(ids))
-
-    if len(ids) == 0:
-        return []
-
-    sql = """
-        SELECT title,body FROM article
-        WHERE id in ({})
-    """.format(','.join(ids))
-
-    logging.info("SQL:{}".format(sql))
-    c.execute(sql)
-    title_kw = []
-    content_kw = []
-    for row in c.fetchall():
-        body = element_to_text(row['body'])
-        title_kw.extend(utf8_en(t).lower() for t in analyse.extract_tags(row['title']))
-        content_kw.extend(utf8_en(t).lower() for t in analyse.extract_tags(body, topK=200))
-    title_kw = list(set(title_kw))
-    content_kw = list(set(content_kw))
-    c.close()
-    db.close()
-
-    return [
-        ListCatFeature(1, 'title_kw', title_kw),
-        ListCatFeature(2, 'content_kw', content_kw)
-    ]
-
-
+def url_domain(url):
+    from urlparse import urlparse
+    obj = urlparse(url)
+    return obj.netloc
 
 _hash_m = 10 ** 6
 
@@ -82,6 +40,12 @@ class FeatureEngine(object):
     def __init__(self, hash_m=10 ** 6):
         global _hash_m
         _hash_m = hash_m
+
+        self._db = mysql.connector.connect(**mysql_conf)
+        self._user_feat_offset = 0
+        self._item_feat_offset = 100
+        self._req_feat_offset = 200
+        self._cross_feat_offset = 1000
 
     __instance = None
 
@@ -100,14 +64,117 @@ class FeatureEngine(object):
         :param req:  请求上下文
         :return: list<Feature>
         """
-        flist = FeatureList()
-        flist.extend(_get_user_current_feat())
-        return flist
+        u_flist = FeatureList()
+        u_flist.extend(self._get_user_current_feat())
+
+        item_flist = self._get_item_feat(item_id_list, self._item_feat_offset)
+
+        results = []
+        for i in item_id_list:
+            f = FeatureList()
+
+            # user 特征
+            f.extend(u_flist)
+
+            if i in item_flist.keys():
+                # item 特征
+                f.extend(item_flist[i])
+
+                # 交叉特征
+                f.extend(self._cross_user_item_feat(u_flist, item_flist[i]))
+
+            results.append(f)
+        return results
+
+    def _get_item_feat(self, ids, offset=0):
+        if len(ids) == 0:
+            return []
+
+        sql = """
+            SELECT id,title,body,link FROM article
+            WHERE id in ({})
+        """.format(','.join(str(i) for i in ids))
+
+        logging.info("SQL:{}".format(sql))
+
+        c = self._db.cursor(dictionary=True)
+        c.execute(sql)
+
+        feats = {}
+
+        for row in c.fetchall():
+            body = element_to_text(row['body'])
+            aid = row['id']
+            domain = url_domain(row['link'])
+
+            title_kw = [utf8_en(t).lower() for t in analyse.extract_tags(row['title'])]
+            content_kw = [utf8_en(t).lower() for t in analyse.extract_tags(body, topK=200)]
+
+            title_kw = list(set(title_kw))
+            content_kw = list(set(content_kw))
+
+            feats[aid] = FeatureList([
+                ListCatFeature(1 + offset, 'title_kw', title_kw),
+                ListCatFeature(2 + offset, 'content_kw', content_kw),
+                CatFeature(3 + offset, 'site_domain', domain)
+            ])
+
+        return feats
+
+    def _cross_user_item_feat(self, user_feat, item_feat):
+        assert isinstance(user_feat, FeatureList)
+        assert isinstance(item_feat, FeatureList)
+
+        feats = FeatureList()
+
+        names = ['title_kw', 'site_domain']
+        n = 0
+        for u in names:
+            fu = user_feat.get_feat_by_name(u)
+            fi = item_feat.get_feat_by_name(u)
+
+            cross_f = set()
+            for uv in fu.value:
+                for iv in fi.value:
+                    cross_f.add(uv + ':' + iv)
+
+            n += 1
+            cross_f = ListCatFeature(self._cross_feat_offset + n,
+                                     'cross:{}'.format(u),
+                                     list(cross_f))
+
+            feats.append(cross_f)
+        return feats
 
 
-from collections import namedtuple
 
-class LibsvmNode():
+    def _get_user_current_feat(self):
+        c = self._db.cursor(dictionary=True)
+        now = int(time.time())
+        sql = """
+            SELECT json_extract(a.evt_attr, '$.article_id') AS ids
+            FROM article_event a
+            WHERE time > {} AND name in ('like', 'hate')
+        """.format(now - 3600 * 48)
+
+        logging.info('SQL:{}'.format(sql))
+        c.execute(sql)
+
+        ids = []
+        for row in c.fetchall():
+            ids.extend([i for i in row['ids'].replace('"', '').split(',')])
+        ids = list(set(ids))
+
+        item_feats = self._get_item_feat(ids, self._user_feat_offset)
+
+        feat_list = FeatureList()
+        for i, feats in item_feats.items():
+            feat_list.extend(feats)
+
+        return feat_list
+
+
+class LibsvmNode:
     def __init__(self, idx, val):
         assert type(idx) in (int, long)
         assert type(val) in (int, float, long)
@@ -197,6 +264,8 @@ class CatFeature(Feature):
         return "{}:{}:{}".format(self.fid, idx, val)
 
 
+
+
 class ListCatFeature(Feature):
     def __init__(self, fid, name, value):
         assert type(value) is list
@@ -228,6 +297,12 @@ class FeatureList:
             for f in flist:
                 self.append(f)
 
+    def get_feat_by_name(self, name):
+        for f in self._features:
+            if f.name == name:
+                return f
+        return None
+
     def append(self, feat):
         assert isinstance(feat, IFeature)
 
@@ -235,11 +310,14 @@ class FeatureList:
         return self
 
     def extend(self, flist):
-        assert isinstance(flist, list)
+        assert isinstance(flist, list) or isinstance(flist, FeatureList)
 
         for f in flist:
             self.append(f)
         return self
+
+    def __add__(self, other):
+        return self.extend(other)
 
     def __len__(self):
         return len(self._features)
@@ -247,13 +325,16 @@ class FeatureList:
     def __getitem__(self, item):
         return self._features[item]
 
+    def __iter__(self):
+        return iter(self._features)
+
     def to_libsvm(self):
         s = []
         for f in self._features:
             assert isinstance(f, IFeature)
             s.extend(f.to_libsvm())
 
-        _s = {node.idx : node for node in s}
+        _s = {node.idx: node for node in s}
         s = _s.values()
         s.sort(key=lambda n: n.idx)
 
@@ -277,6 +358,7 @@ if __name__ == '__main__':
     print(f_list.to_libsvm())
 
     print("====test engine=====")
-    engine = FeatureEngine(100)
+    engine = FeatureEngine(10 ** 4)
     f_list = engine.get_feature_list(12, [12, 23], {})
-    print(f_list.to_libsvm())
+    for i, f in enumerate(f_list):
+        print(i, f.to_libsvm())
