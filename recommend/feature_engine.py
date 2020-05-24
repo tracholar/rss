@@ -17,6 +17,7 @@ import mysql.connector
 from analysis.html_analysis import element_to_text, html_to_element
 import time
 from jieba import analyse
+from tools import time_cost
 
 logging.basicConfig(
     format='%(asctime)s %(levelname)-8s %(message)s',
@@ -37,10 +38,12 @@ def f_hash(s):
     digest = hashlib.md5(s).hexdigest()
     return int(digest, 16) % m
 
+
 def url_domain(url):
     from urlparse import urlparse
     obj = urlparse(url)
     return obj.netloc
+
 
 _hash_m = 10 ** 4
 
@@ -64,6 +67,7 @@ class FeatureEngine(object):
 
         return cls.__instance
 
+    @time_cost
     def get_feature_list(self, uid, item_id_list, req):
         """
         获取特征列表
@@ -155,8 +159,6 @@ class FeatureEngine(object):
             feats.append(cross_f)
         return feats
 
-
-
     def _get_user_current_feat(self):
         c = self._db.cursor(dictionary=True)
         now = int(time.time())
@@ -183,7 +185,7 @@ class FeatureEngine(object):
         return feat_list
 
 
-class LibsvmNode:
+class LibsvmNode(object):
     def __init__(self, idx, val):
         assert type(idx) in (int, long)
         assert type(val) in (int, float, long)
@@ -273,8 +275,6 @@ class CatFeature(Feature):
         return "{}:{}:{}".format(self.fid, idx, val)
 
 
-
-
 class ListCatFeature(Feature):
     def __init__(self, fid, name, value):
         assert type(value) is list
@@ -298,7 +298,35 @@ class ListCatFeature(Feature):
         return s
 
 
-class FeatureList:
+from numba import jit
+
+
+def get_key(n):
+    return n.idx
+
+
+@time_cost
+def to_libsvm(features):
+    s = []
+    for f in features:
+        assert isinstance(f, IFeature)
+        s.extend(f.to_libsvm())
+
+    _s = dict()
+    for node in s:
+        _s[node.idx] = node
+
+    s = _s.values()
+
+    s.sort(key=get_key)
+
+    str_s = []
+    for si in s:
+        str_s.append(str(si))
+    return ' '.join(str_s)
+
+
+class FeatureList(object):
     def __init__(self, flist=None):
         self._features = []
 
@@ -338,16 +366,7 @@ class FeatureList:
         return iter(self._features)
 
     def to_libsvm(self):
-        s = []
-        for f in self._features:
-            assert isinstance(f, IFeature)
-            s.extend(f.to_libsvm())
-
-        _s = {node.idx: node for node in s}
-        s = _s.values()
-        s.sort(key=lambda n: n.idx)
-
-        return ' '.join(str(si) for si in s)
+        return to_libsvm(self._features)
 
 
 if __name__ == '__main__':

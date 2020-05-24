@@ -96,6 +96,15 @@ _server = RecommendServer(recall_n=20, rank_n=5,
                           model_path='../recommend/model/model')
 
 
+@app.route('/exp_json')
+def index_exp_json():
+    articles = _server.recommend(1, {})
+    for article in articles:
+        article['body'] = Markup(filter_script_css(article['body']))
+    resp = make_response(json.dumps(articles))
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
+
 @app.route('/exp')
 def index_exp():
     offset = safe_int(request.args.get('offset', 0))

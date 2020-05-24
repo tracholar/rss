@@ -52,7 +52,9 @@ def repr_sparse(arr, limit=10):
 
     return ' '.join(s)
 
+from tools import time_cost
 
+@time_cost
 def parse_libsvm(libsvm):
     if not isinstance(libsvm, list):
         libsvm = [libsvm]
@@ -93,14 +95,18 @@ class LibsvmTrainer(ITrainer):
     def __init__(self, model_path=None, dump_path='./model', dump_n=10,
                  feature_n=10 ** 4):
         if model_path is None:
-            self._clf = SGDClassifier(learning_rate='constant',
-                                      eta0=1e-3,
-                                      penalty='elasticnet',
-                                      alpha=1e-3,
-                                      verbose=True)
-
+            self._clf = SGDClassifier()
         else:
             self._clf = pickle.load(open(model_path))
+
+        params = dict(learning_rate='constant',
+                      eta0=1e-3,
+                      penalty='elasticnet',
+                      alpha=0.1,
+                      l1_ratio=0.8,
+                      verbose=True)
+        self._clf.set_params(**params)
+
         assert isinstance(self._clf, SGDClassifier)
 
         self.dump_path = dump_path

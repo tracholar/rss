@@ -15,6 +15,8 @@ logging.basicConfig(
     datefmt='%Y-%m-%d %H:%M:%S')
 
 
+from tools import time_cost
+
 class ModelServer(object):
     def __init__(self, model_path='./model', load_n=1):
         self.model_path = model_path
@@ -50,6 +52,7 @@ class RecommendServer(object):
         self._rank_n = rank_n
         self._db = mysql.connector.connect(**mysql_conf)
 
+    @time_cost
     def _recall(self, uid, view_list=[-1]):
         sql = """
         select id from article
@@ -69,6 +72,7 @@ class RecommendServer(object):
 
         return ids
 
+    @time_cost
     def _rank(self, uid, recall_ids, req):
         score = self._predictor.predict(uid, recall_ids, req)
         score = sorted(score, reverse=True, key=lambda x: x[1])
@@ -78,6 +82,7 @@ class RecommendServer(object):
         n = min(self._rank_n, len(score))
         return score[:n]
 
+    @time_cost
     def _fetch_detail(self, aids):
         sql = """
         select * from article
@@ -98,6 +103,7 @@ class RecommendServer(object):
 
         return articles
 
+    @time_cost
     def recommend(self, uid, req={}):
         aids = self._recall(uid, [-1])
         aids = self._rank(uid, aids, req)
