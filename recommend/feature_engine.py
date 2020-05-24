@@ -1,4 +1,13 @@
 # coding:utf-8
+"""
+特征工程模块，提供一个统一的特征工程接口，用于训练和预测
+
+```python
+engine = FeatureEngine(10 ** 4)
+f_list = engine.get_feature_list(12, [12, 23], {})
+```
+
+"""
 from __future__ import print_function
 import logging
 from abc import ABCMeta, abstractmethod
@@ -33,11 +42,11 @@ def url_domain(url):
     obj = urlparse(url)
     return obj.netloc
 
-_hash_m = 10 ** 6
+_hash_m = 10 ** 4
 
 
 class FeatureEngine(object):
-    def __init__(self, hash_m=10 ** 6):
+    def __init__(self, hash_m=10 ** 4):
         global _hash_m
         _hash_m = hash_m
 

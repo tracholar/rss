@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+message TrainRequest {
+    repeated string ins = 1;
+}
+
+message TrainResponse {
+    bool status = 1;
+    string message = 2;
+}
+
+service TrainServer {
+    rpc onBatch(TrainRequest) returns (TrainResponse) {}
+}
