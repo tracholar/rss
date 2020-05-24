@@ -80,24 +80,24 @@ class FeatureEngine(object):
 
         results = []
         for i in item_id_list:
+            i = int(i)
             f = FeatureList()
 
             # user 特征
             f.extend(u_flist)
 
-            if i in item_flist.keys():
-                # item 特征
-                f.extend(item_flist[i])
+            # item 特征
+            f.extend(item_flist[i])
 
-                # 交叉特征
-                f.extend(self._cross_user_item_feat(u_flist, item_flist[i]))
+            # 交叉特征
+            f.extend(self._cross_user_item_feat(u_flist, item_flist[i]))
 
             results.append(f)
         return results
 
     def _get_item_feat(self, ids, offset=0):
         if len(ids) == 0:
-            return []
+            return {}
 
         sql = """
             SELECT id,title,body,link FROM article

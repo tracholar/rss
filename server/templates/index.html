@@ -23,6 +23,10 @@
                             {% if 'score' in article %}
                             <span class="text-info">rec:{{ article.score | float3 }}</span>
                             {% endif %}
+                            |
+                            {% if 'rank_score' in article %}
+                            <span class="text-info">rec:{{ article.rank_score | float3 }}</span>
+                            {% endif %}
                             {% if 'n_like' in article and article['n_like']>0 %}
                             <span class="text-danger">已收藏</span>
                             {% endif %}

@@ -1,4 +1,4 @@
-#coding:utf-8
+# coding:utf-8
 import sys
 from flask import Flask
 from flask import render_template
@@ -13,10 +13,12 @@ from analysis.html_analysis import filter_script_css
 app = Flask(__name__)
 app.config["TEMPLATES_AUTO_RELOAD"] = True
 
+
 def get_db():
     if 'db' not in g:
         g.db = mysql.connector.connect(**mysql_conf)
     return g.db
+
 
 @app.after_request
 def close_db(e=None):
@@ -27,11 +29,13 @@ def close_db(e=None):
             db.close()
     return e
 
+
 @app.template_filter('url_domain')
 def url_domain(url):
     from urlparse import urlparse
     obj = urlparse(url)
     return obj.netloc
+
 
 @app.template_filter('float3')
 def float3(x):
@@ -40,20 +44,21 @@ def float3(x):
     return '{:.3f}'.format(float(x))
 
 
-
 @app.template_filter('article_tags')
 def article_tags(article_id):
     if type(article_id) is not int:
         return ''
     db = get_db()
     c = db.cursor(dictionary=True)
-    c.execute("select name from article_tags where article_id = %s", (article_id, ))
+    c.execute("select name from article_tags where article_id = %s", (article_id,))
     tags = c.fetchall()
     return [tag['name'] for tag in tags]
+
 
 @app.route("/hello")
 def hello():
     return "Hello World!"
+
 
 @app.route("/test_data")
 def test_data():
@@ -63,13 +68,14 @@ def test_data():
     articles = c.fetchall()
     for article in articles:
         article['body'] = Markup(filter_script_css(article['body']))
-    #return json.dumps(articles, ensure_ascii=False)
+    # return json.dumps(articles, ensure_ascii=False)
     return render_template('index.html', articles=articles)
 
 
-    from lxml import etree
+from lxml import etree
 from StringIO import StringIO
 import re
+
 
 def safe_int(x):
     if type(x) is str:
@@ -77,9 +83,41 @@ def safe_int(x):
             return 0
         return int(x)
     return int(x)
+
+
 def trace_id():
     from hashlib import md5
     return md5(str(time.time())).hexdigest()[:10] + str(int(time.time()))
+
+
+from recommend.model_server import RecommendServer
+
+_server = RecommendServer(recall_n=20, rank_n=5,
+                          model_path='../recommend/model/model')
+
+
+@app.route('/exp')
+def index_exp():
+    offset = safe_int(request.args.get('offset', 0))
+
+    articles = _server.recommend(1, {})
+    for article in articles:
+        article['body'] = Markup(filter_script_css(article['body']))
+
+    url_args = {}
+    for k in request.args:
+        if k != 'offset':
+            url_args[k] = request.args[k]
+
+    args = {
+        "articles": articles,
+        "next_link": url_for('index_exp', offset=offset + 10, **url_args),
+        "prev_link": url_for('index_exp', offset=max(0, offset - 10), **url_args)
+    }
+    resp = make_response(render_template('index.html', **args))
+    resp.set_cookie('_tid', trace_id())
+    return resp
+
 
 @app.route("/")
 def index():
@@ -94,7 +132,8 @@ def index():
     if 'like' in request.args:
         where.append("n_like is not null and n_like>0")
     if 'tag' in request.args:
-        where.append(" id in (select article_id from article_tags where name='" + MySQLdb.escape_string(request.args.get('tag').encode('utf-8')) + "')")
+        where.append(" id in (select article_id from article_tags where name='" + MySQLdb.escape_string(
+            request.args.get('tag').encode('utf-8')) + "')")
     if len(where) > 0:
         where = ' where ' + ' AND '.join(where)
     else:
@@ -108,7 +147,7 @@ def index():
     elif 'orderby' in request.args:
         orderby = ' order by ' + request.args['orderby'] + ' '
 
-    c.execute("select * from article " + where + orderby +" limit " + str(offset) + ",10")
+    c.execute("select * from article " + where + orderby + " limit " + str(offset) + ",10")
     articles = c.fetchall()
     for article in articles:
         article['body'] = Markup(filter_script_css(article['body']))
@@ -118,13 +157,14 @@ def index():
         if k != 'offset':
             url_args[k] = request.args[k]
     args = {
-        "articles" : articles,
-        "next_link" : url_for('index', offset=offset+10, **url_args),
-        "prev_link" : url_for('index', offset=max(0, offset - 10), **url_args)
+        "articles": articles,
+        "next_link": url_for('index', offset=offset + 10, **url_args),
+        "prev_link": url_for('index', offset=max(0, offset - 10), **url_args)
     }
-    resp = make_response( render_template('index.html', **args) )
+    resp = make_response(render_template('index.html', **args))
     resp.set_cookie('_tid', trace_id())
     return resp
+
 
 @app.route("/article/<int:article_id>")
 def article(article_id):
@@ -136,36 +176,48 @@ def article(article_id):
         article['body'] = Markup(filter_script_css(article['body']))
 
     args = {
-        "articles" : articles
+        "articles": articles
     }
     return render_template('index.html', **args)
+
+
+from recommend.model_trainer import train_sample
+
 
 @app.route("/event/<string:evt_name>")
 def event(evt_name):
     if evt_name not in ('show', 'click', 'like', 'hate'):
-        ret = {'status' : 300, 'msg' : 'unknow event name ' + evt_name}
+        ret = {'status': 300, 'msg': 'unknow event name ' + evt_name}
         resp = make_response(json.dumps(ret))
         resp.headers['Content-Type'] = 'application/json'
         return resp
 
     tid = request.cookies.get('_tid', '')
 
+    article_id = request.args['article_id']
     evt_attr = {
-        '_tid' : tid,
+        '_tid': tid,
+        'article_id': article_id
     }
+
+    if evt_name in ('like', 'hate'):
+        y = 1 if evt_name == 'like' else 0
+        train_sample((y, 1, article_id))
+
     for k in request.args:
         evt_attr[k] = request.args[k]
 
     db = get_db()
     c = db.cursor()
     c.execute("INSERT INTO article_event (name, time, evt_attr) VALUES (%s, %s, %s)",
-              (evt_name, int(time.time()),  json.dumps(evt_attr)))
+              (evt_name, int(time.time()), json.dumps(evt_attr)))
     db.commit()
 
-    ret = {'status' : 200}
+    ret = {'status': 200}
     resp = make_response(json.dumps(ret))
     resp.headers['Content-Type'] = 'application/json'
     return resp
+
 
 @app.route("/like/<int:article_id>")
 def like(article_id):
@@ -175,15 +227,17 @@ def like(article_id):
               (article_id,))
     db.commit()
 
-    ret = {'status' : 200}
+    ret = {'status': 200}
     resp = make_response(json.dumps(ret))
     resp.headers['Content-Type'] = 'application/json'
     return resp
+
 
 @app.route("/jump")
 def jump():
     url = request.args.get('url', "")
     return redirect(url)
+
 
 @app.route("/src")
 def src():
@@ -196,17 +250,18 @@ def src():
     if not url.startswith('http'):
         url = urljoin(refer, url)
     headers = {
-        'user-agent' : "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
-        'Referer' : refer
+        'user-agent': "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.36",
+        'Referer': refer
     }
     try:
-        r = rq.get(url, headers=headers, stream = True)
+        r = rq.get(url, headers=headers, stream=True)
         resp = make_response(r.raw.data)
         for h in r.headers:
             resp.headers.set(h, r.headers[h])
         return resp
     except Exception:
         return make_response('')
+
 
 @app.route('/main_content_sample', methods=['POST'])
 def main_content_sample():
@@ -221,11 +276,13 @@ def main_content_sample():
     add_sample(html, y)
     return make_response('')
 
+
 @app.route('/main_content_sample/del/<int:id>')
 def del_main_content_sample(id):
     from analysis.html_analysis import remove_sample
     remove_sample(id)
     return redirect(url_for('show_main_content_sample'))
+
 
 @app.route('/main_content_sample/show')
 def show_main_content_sample():
@@ -241,7 +298,6 @@ def show_main_content_sample():
     return render_template('main_content_sample.html', articles=articles)
 
 
-
 @app.route('/tag_main_content')
 def tag_main_content():
     db = get_db()
@@ -255,11 +311,15 @@ def tag_main_content():
     from analysis.html_analysis import predict, element_to_html, extract_feat_v2
     parser = etree.HTMLParser()
     T = etree.parse(StringIO(article['body']), parser)
-    score = [(n,predict(n), extract_feat_v2(n)) for n in T.iter() if type(n.tag) is str and n.tag.lower() in ('div', 'section', 'article')]
+    score = [(n, predict(n), extract_feat_v2(n)) for n in T.iter() if
+             type(n.tag) is str and n.tag.lower() in ('div', 'section', 'article')]
     score.sort(key=lambda x: x[1], reverse=True)
-    articles = [{'body' : Markup(filter_script_css(element_to_html(n)), encoding='utf-8'), 'title': article['title'], 'link' : article['link'], 'date' : article['date'], 'extra' : 'score:' + str(v) + '<br/>feat:' + str(f)} for n,v,f in score]
-    #print articles
+    articles = [{'body': Markup(filter_script_css(element_to_html(n)), encoding='utf-8'), 'title': article['title'],
+                 'link': article['link'], 'date': article['date'], 'extra': 'score:' + str(v) + '<br/>feat:' + str(f)}
+                for n, v, f in score]
+    # print articles
     return render_template('index.html', articles=articles)
+
 
 @app.route('/daily-rec')
 def daily_rec():
@@ -269,11 +329,12 @@ def daily_rec():
         article['body'] = Markup(filter_script_css(article['body']))
     return render_template('index.html', articles=articles)
 
+
 @app.route('/extract_tool')
 def extract_tool():
     url = request.args.get('url', '')
     html = ''
-    if len(url) > 0 and  url.startswith('http'):
+    if len(url) > 0 and url.startswith('http'):
         from urllib2 import urlopen
         from analysis.html_analysis import extract_main_content
         try:
@@ -284,6 +345,7 @@ def extract_tool():
             html = str(e).decode('utf-8')
 
     return render_template('extract_tool.html', html=html)
+
 
 if __name__ == '__main__':
     app.run(threaded=True, debug=True)
