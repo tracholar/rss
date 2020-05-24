@@ -95,7 +95,10 @@ class LibsvmTrainer(ITrainer):
         if model_path is None:
             self._clf = SGDClassifier(learning_rate='constant',
                                       eta0=1e-3,
+                                      penalty='elasticnet',
+                                      alpha=1e-3,
                                       verbose=True)
+
         else:
             self._clf = pickle.load(open(model_path))
         assert isinstance(self._clf, SGDClassifier)
@@ -130,8 +133,8 @@ class LibsvmTrainer(ITrainer):
 
 
 class TrainerRpcServer(TrainServerServicer):
-    def __init__(self):
-        self._trainer = LibsvmTrainer()
+    def __init__(self, model=None):
+        self._trainer = LibsvmTrainer(model_path=model)
 
     def onBatch(self, req, context):
         assert isinstance(req, TrainRequest)
@@ -215,7 +218,7 @@ if __name__ == '__main__':
     import sys
 
     if len(sys.argv) == 0 or sys.argv[1] == 'sever':
-        server = TrainerRpcServer()
+        server = TrainerRpcServer('./model/model')
         server.save()
     else:
         client_test()

@@ -16,7 +16,7 @@ logging.basicConfig(
 
 
 class ModelServer(object):
-    def __init__(self, model_path='./model', load_n=10):
+    def __init__(self, model_path='./model', load_n=1):
         self.model_path = model_path
         self.load_n = load_n
 
@@ -27,6 +27,8 @@ class ModelServer(object):
     def _load_model(self):
         with open(self.model_path, 'rb') as fp:
             self._clf = pickle.load(fp)
+
+            logging.info('reload model from {}'.format(self.model_path))
 
     def predict(self, uid, aids, req={}):
         feats = self._feature_engine.get_feature_list(uid, aids, req)

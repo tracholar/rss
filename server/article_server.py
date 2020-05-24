@@ -194,7 +194,7 @@ def event(evt_name):
 
     tid = request.cookies.get('_tid', '')
 
-    article_id = request.args['article_id']
+    article_id = request.args.get('article_id',-1)
     evt_attr = {
         '_tid': tid,
         'article_id': article_id
